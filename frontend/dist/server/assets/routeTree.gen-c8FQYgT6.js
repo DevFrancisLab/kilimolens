@@ -1,7 +1,8 @@
+import { n as createMiddleware } from "../server.js";
 import { useEffect } from "react";
-import { HeadContent, Link, Outlet, Scripts, createFileRoute, createRootRouteWithContext, createRouter, lazyRouteComponent, useRouter } from "@tanstack/react-router";
+import { HeadContent, Link, Outlet, Scripts, createFileRoute, createRootRouteWithContext, lazyRouteComponent, useRouter } from "@tanstack/react-router";
 import { jsx, jsxs } from "react/jsx-runtime";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 //#region src/styles.css?url
 var styles_default = "/assets/styles-BGK6wKBu.css";
 //#endregion
@@ -119,6 +120,23 @@ var Route$1 = createRootRouteWithContext()({
 	}),
 	shellComponent: RootShell,
 	component: RootComponent,
+	server: { middleware: [createMiddleware().server(async ({ request, next }) => {
+		try {
+			const { getStartContext } = await import("../server.js").then((n) => n.r);
+			const startCtx = getStartContext({ throwIfNotFound: false });
+			if (startCtx?.getRouter) {
+				const router = await startCtx.getRouter();
+				const url = new URL(request.url);
+				const { matchedRoutes, foundRoute } = router.getMatchedRoutes(url.pathname || "/");
+				console.log("[TSSR DEBUG-root] Request:", request.method, request.url);
+				console.log("[TSSR DEBUG-root] Found route id:", foundRoute?.id ?? null);
+				console.log("[TSSR DEBUG-root] Matched route ids:", Array.isArray(matchedRoutes) ? matchedRoutes.map((r) => r.id) : matchedRoutes);
+			} else console.log("[TSSR DEBUG-root] start context.getRouter not available");
+		} catch (err) {
+			console.error("[TSSR DEBUG-root] inspect error:", err);
+		}
+		return await next();
+	})] },
 	notFoundComponent: NotFoundComponent,
 	errorComponent: ErrorComponent
 });
@@ -168,14 +186,4 @@ var rootRouteChildren = { IndexRoute: createFileRoute("/")({
 }) };
 var routeTree = Route$1._addFileChildren(rootRouteChildren)._addFileTypes();
 //#endregion
-//#region src/router.tsx
-var getRouter = () => {
-	return createRouter({
-		routeTree,
-		context: { queryClient: new QueryClient() },
-		scrollRestoration: true,
-		defaultPreloadStaleTime: 0
-	});
-};
-//#endregion
-export { getRouter };
+export { routeTree };

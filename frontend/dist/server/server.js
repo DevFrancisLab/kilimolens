@@ -9,6 +9,18 @@ import { mergeHeaders } from "@tanstack/router-core/ssr/client";
 import { fromJSON, toCrossJSONAsync, toCrossJSONStream } from "seroval";
 import { createMemoryHistory } from "@tanstack/history";
 import { attachRouterServerSsrUtils, getNormalizedURL, getOrigin, isSsrResponse, normalizeSsrResponse, replaceSsrResponse, stripSsrResponseBody } from "@tanstack/router-core/ssr/server";
+//#region \0rolldown/runtime.js
+var __defProp = Object.defineProperty;
+var __exportAll = (all, no_symbols) => {
+	let target = {};
+	for (var name in all) __defProp(target, name, {
+		get: all[name],
+		enumerable: true
+	});
+	if (!no_symbols) __defProp(target, Symbol.toStringTag, { value: "Module" });
+	return target;
+};
+//#endregion
 //#region node_modules/@tanstack/react-start-server/dist/esm/StartServer.js
 function StartServer(props) {
 	return /* @__PURE__ */ jsx(RouterProvider, { router: props.router });
@@ -91,7 +103,7 @@ var HEADERS = { TSS_SHELL: "X-TSS_SHELL" };
 * the dev styles URL for route-scoped CSS collection.
 */
 async function getStartManifest(matchedRoutes) {
-	const { tsrStartManifest } = await import("./assets/_tanstack-start-manifest_v-yWivPgmT.js");
+	const { tsrStartManifest } = await import("./assets/_tanstack-start-manifest_v-D3_L0ye-.js");
 	const startManifest = tsrStartManifest();
 	let routes = startManifest.routes;
 	routes[rootRouteId];
@@ -186,6 +198,9 @@ function getStartContext(opts) {
 	if (!context && opts?.throwIfNotFound !== false) throw new Error(`No Start context found in AsyncLocalStorage. Make sure you are using the function within the server runtime.`);
 	return context;
 }
+//#endregion
+//#region node_modules/@tanstack/start-storage-context/dist/esm/index.js
+var esm_exports = /* @__PURE__ */ __exportAll({ getStartContext: () => getStartContext });
 //#endregion
 //#region node_modules/@tanstack/start-client-core/dist/esm/getStartOptions.js
 var getStartOptions = () => getStartContext().startOptions;
@@ -1257,8 +1272,8 @@ var getBaseManifest = getProdBaseManifest;
 var createEarlyHintsForRequest = createEarlyHintsCollector;
 async function loadEntries() {
 	const [routerEntry, startEntry, pluginAdapters] = await Promise.all([
-		import("./assets/router-CkUY1F9_.js"),
-		import("./assets/start-B-B6pMl3.js"),
+		import("./assets/router-j97SjrCT.js"),
+		import("./assets/start-cEbZ9wbq.js"),
 		import("./assets/empty-plugin-adapters-D9UWiqvJ.js")
 	]);
 	return {
@@ -1644,4 +1659,4 @@ function createServerEntry(entry) {
 }
 var server_default = createServerEntry({ fetch });
 //#endregion
-export { createServerEntry, server_default as default, createMiddleware as n, createStart as t };
+export { createServerEntry, server_default as default, createMiddleware as n, esm_exports as r, createStart as t };

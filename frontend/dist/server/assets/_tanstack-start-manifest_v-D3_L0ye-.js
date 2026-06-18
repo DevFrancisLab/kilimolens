@@ -3,17 +3,17 @@ var tsrStartManifest = () => ({ routes: {
 	__root__: {
 		filePath: "/home/frank/kilimolens/frontend/src/routes/__root.tsx",
 		children: ["/"],
-		preloads: ["/assets/index-_12gxP73.js"],
+		preloads: ["/assets/index-IcrlHI9R.js"],
 		scripts: [{ attrs: {
 			type: "module",
 			async: !0,
-			src: "/assets/index-_12gxP73.js"
+			src: "/assets/index-IcrlHI9R.js"
 		} }]
 	},
 	"/": {
 		filePath: "/home/frank/kilimolens/frontend/src/routes/index.tsx",
 		children: void 0,
-		preloads: ["/assets/routes-CIhc9tY9.js"]
+		preloads: ["/assets/routes-CxOtuTgo.js"]
 	}
 } });
 //#endregion

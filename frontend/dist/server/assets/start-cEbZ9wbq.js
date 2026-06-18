@@ -44,6 +44,32 @@ var errorMiddleware = createMiddleware().server(async ({ next }) => {
 		});
 	}
 });
-var startInstance = createStart(() => ({ requestMiddleware: [errorMiddleware] }));
+var debugRouteMiddleware = createMiddleware().server(async ({ request, next }) => {
+	try {
+		return await next();
+	} finally {
+		try {
+			const { getStartContext } = await import("../server.js").then((n) => n.r);
+			const startCtx = getStartContext({ throwIfNotFound: false });
+			if (!startCtx?.getRouter) {
+				console.log("[TSSR DEBUG] no start context.getRouter available for this request");
+				return;
+			}
+			const router = await startCtx.getRouter();
+			const pathname = new URL(request.url).pathname || "/";
+			const { matchedRoutes, foundRoute } = router.getMatchedRoutes(pathname);
+			console.log("[TSSR DEBUG] Request:", request.method, request.url);
+			console.log("[TSSR DEBUG] Found route id:", foundRoute?.id ?? null);
+			console.log("[TSSR DEBUG] Matched route ids:", Array.isArray(matchedRoutes) ? matchedRoutes.map((r) => r.id) : matchedRoutes);
+			try {
+				const manifest = await import("./routeTree.gen-c8FQYgT6.js");
+				if (manifest && manifest.routeTree) console.log("[TSSR DEBUG] routeTree root id:", manifest.routeTree.id ?? "<no id>");
+			} catch (e) {}
+		} catch (err) {
+			console.error("[TSSR DEBUG] inspect error:", err);
+		}
+	}
+});
+var startInstance = createStart(() => ({ requestMiddleware: [errorMiddleware, debugRouteMiddleware] }));
 //#endregion
 export { startInstance };
