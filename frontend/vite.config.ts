@@ -1,20 +1,27 @@
-// @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
-// or the app will break with duplicate plugins:
-//   - tanstackStart, viteReact, tailwindcss, tsConfigPaths, nitro (build-only using cloudflare as a default target),
-//     componentTagger (dev-only), VITE_* env injection, @ path alias, React/TanStack dedupe,
-//     error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tsconfigPaths from "vite-tsconfig-paths";
+import * as tanstackRouterPlugin from "@tanstack/router-plugin/vite";
+const tanstackRouter = (tanstackRouterPlugin as any).default ?? (tanstackRouterPlugin as any).tanstackRouter ?? tanstackRouterPlugin;
+// Import the TanStack Start plugin defensively in case of named/default export differences.
+import * as tanstackStartPlugin from "@tanstack/react-start/plugin/vite";
+const tanstackStart = (tanstackStartPlugin as any).default ?? (tanstackStartPlugin as any).tanstackStart ?? tanstackStartPlugin;
 
+// Standard Vite config using TanStack Start plugin for SSR.
+// Keeps server entry at `src/server.ts` and preserves existing dev server port.
 export default defineConfig({
-  tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
-    server: { entry: "server" },
-  },
-  vite: {
-    server: {
-      port: 5173,
-    },
+  plugins: [
+    // Router plugin must come before JSX/React transformation plugins.
+    tanstackRouter(),
+    // Configure TanStack Start plugin for SSR/Nitro integration. Keep before React.
+    tanstackStart({
+      server: { entry: "src/server" },
+    }),
+    // JSX transform should come after router/start plugins.
+    react(),
+    tsconfigPaths(),
+  ],
+  server: {
+    port: 5173,
   },
 });
