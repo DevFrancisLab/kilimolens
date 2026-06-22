@@ -1,6 +1,8 @@
 import React from "react";
 import { Link } from "@tanstack/react-router";
-import { Home, FilePlus, Users, Cpu, Database, Globe, BarChart2, Settings, Zap } from "lucide-react";
+import * as lucidePkg from "lucide-react";
+const lucide = (lucidePkg as any).default ?? lucidePkg;
+const { Home, FilePlus, Users, Cpu, Database, Globe, BarChart2, Settings, Zap } = lucide;
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 

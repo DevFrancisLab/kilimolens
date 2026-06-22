@@ -4,9 +4,11 @@ import DashboardLayout from '@/components/dashboard/Layout';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { MapPin, Calendar, CreditCard, Activity, Seedling, Layers, Archive } from 'lucide-react';
+import * as lucidePkg from 'lucide-react';
+const lucide = (lucidePkg as any).default ?? lucidePkg;
+const { MapPin, Calendar, CreditCard, Activity, Seedling, Layers, Archive } = lucide;
 
-export const Route = createFileRoute('/dashboard/farmer/:id')({
+export const Route = createFileRoute('/dashboard/farmer-profile')({
   head: () => ({ meta: [{ title: 'Farmer Profile — KilimoLens' }] }),
   component: FarmerProfile,
 });

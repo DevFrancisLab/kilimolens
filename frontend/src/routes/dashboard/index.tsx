@@ -14,7 +14,7 @@ import {
   Percent,
 } from "lucide-react";
 
-export const Route = createFileRoute("/dashboard")({
+export const Route = createFileRoute("/dashboard/")({
   head: () => ({ meta: [{ title: "Dashboard — KilimoLens" }] }),
   component: Dashboard,
 });

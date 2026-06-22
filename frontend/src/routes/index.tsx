@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import heroImg from "@/assets/hero-satellite.jpg";
 import dashImg from "@/assets/dashboard-mock.jpg";
-import {
+import * as lucidePkg from "lucide-react";
+const lucide = (lucidePkg as any).default ?? lucidePkg;
+const {
   ArrowRight,
   Satellite,
   Brain,
@@ -21,7 +23,7 @@ import {
   Twitter,
   Linkedin,
   Github,
-} from "lucide-react";
+} = lucide;
 
 export const Route = createFileRoute("/")({
   head: () => ({

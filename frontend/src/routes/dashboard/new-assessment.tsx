@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Save, X, MapPin, Home, Seedling, Layers, Activity, Calendar, Droplet, ShoppingCart, CreditCard, Wallet, Smartphone, DollarSign, Briefcase, Info, CheckCircle2, CloudRain, AlertTriangle, Sun, Thermometer, TrendingUp, Leaf, BarChart2 } from "lucide-react";
+import * as lucidePkg from "lucide-react";
+const lucide = (lucidePkg as any).default ?? lucidePkg;
+const { ArrowLeft, ArrowRight, Save, X, MapPin, Home, Seedling, Layers, Activity, Calendar, Droplet, ShoppingCart, CreditCard, Wallet, Smartphone, DollarSign, Briefcase, Info, CheckCircle2, CloudRain, AlertTriangle, Sun, Thermometer, TrendingUp, Leaf, BarChart2 } = lucide;
 
 export const Route = createFileRoute("/dashboard/new-assessment")({
   head: () => ({ meta: [{ title: "New Assessment — KilimoLens" }] }),

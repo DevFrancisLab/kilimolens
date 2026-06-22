@@ -10,33 +10,76 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardNewAssessmentRouteImport } from './routes/dashboard/new-assessment'
+import { Route as DashboardFarmerProfileRouteImport } from './routes/dashboard/farmer-profile'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/dashboard/',
+  path: '/dashboard/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardNewAssessmentRoute = DashboardNewAssessmentRouteImport.update({
+  id: '/dashboard/new-assessment',
+  path: '/dashboard/new-assessment',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardFarmerProfileRoute = DashboardFarmerProfileRouteImport.update({
+  id: '/dashboard/farmer-profile',
+  path: '/dashboard/farmer-profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard/farmer-profile': typeof DashboardFarmerProfileRoute
+  '/dashboard/new-assessment': typeof DashboardNewAssessmentRoute
+  '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard/farmer-profile': typeof DashboardFarmerProfileRoute
+  '/dashboard/new-assessment': typeof DashboardNewAssessmentRoute
+  '/dashboard': typeof DashboardIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard/farmer-profile': typeof DashboardFarmerProfileRoute
+  '/dashboard/new-assessment': typeof DashboardNewAssessmentRoute
+  '/dashboard/': typeof DashboardIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/dashboard/farmer-profile'
+    | '/dashboard/new-assessment'
+    | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/dashboard/farmer-profile'
+    | '/dashboard/new-assessment'
+    | '/dashboard'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard/farmer-profile'
+    | '/dashboard/new-assessment'
+    | '/dashboard/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardFarmerProfileRoute: typeof DashboardFarmerProfileRoute
+  DashboardNewAssessmentRoute: typeof DashboardNewAssessmentRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +91,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/dashboard'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/new-assessment': {
+      id: '/dashboard/new-assessment'
+      path: '/dashboard/new-assessment'
+      fullPath: '/dashboard/new-assessment'
+      preLoaderRoute: typeof DashboardNewAssessmentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/farmer-profile': {
+      id: '/dashboard/farmer-profile'
+      path: '/dashboard/farmer-profile'
+      fullPath: '/dashboard/farmer-profile'
+      preLoaderRoute: typeof DashboardFarmerProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardFarmerProfileRoute: DashboardFarmerProfileRoute,
+  DashboardNewAssessmentRoute: DashboardNewAssessmentRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

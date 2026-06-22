@@ -7,7 +7,6 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { createMiddleware } from "@tanstack/react-start";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
@@ -96,36 +95,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   }),
   shellComponent: RootShell,
   component: RootComponent,
-  // Server-only middleware attached to the root route. Runs inside the Start
-  // server request context so it can inspect the runtime router and matched
-  // routes. This is temporary for debugging the Vercel 404 and does not
-  // modify UI or business logic.
-  server: {
-    middleware: [
-      createMiddleware().server(async ({ request, next }) => {
-        try {
-          const { getStartContext } = await import("@tanstack/start-storage-context");
-          const startCtx = getStartContext({ throwIfNotFound: false });
-          if (startCtx?.getRouter) {
-            const router = await startCtx.getRouter();
-            const url = new URL(request.url);
-            const { matchedRoutes, foundRoute } = router.getMatchedRoutes(url.pathname || "/");
-            console.log("[TSSR DEBUG-root] Request:", request.method, request.url);
-            console.log("[TSSR DEBUG-root] Found route id:", foundRoute?.id ?? null);
-            console.log(
-              "[TSSR DEBUG-root] Matched route ids:",
-              Array.isArray(matchedRoutes) ? matchedRoutes.map((r) => r.id) : matchedRoutes,
-            );
-          } else {
-            console.log("[TSSR DEBUG-root] start context.getRouter not available");
-          }
-        } catch (err) {
-          console.error("[TSSR DEBUG-root] inspect error:", err);
-        }
-        return await next();
-      }),
-    ],
-  },
+  // Note: server-only middleware removed from the client bundle to avoid
+  // bundling server runtime APIs (AsyncLocalStorage) into the browser.
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });

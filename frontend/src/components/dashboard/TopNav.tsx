@@ -1,5 +1,7 @@
 import React from "react";
-import { Search, Bell } from "lucide-react";
+import * as lucidePkg from "lucide-react";
+const lucide = (lucidePkg as any).default ?? lucidePkg;
+const { Search, Bell } = lucide;
 import { Button } from "../ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
