@@ -60,6 +60,27 @@ type FormState = {
     cooperative: string;
     references: string;
     verified: boolean;
+    saccoMembership: string;
+    saccoMembershipStatus: string;
+    selectedSacco: string;
+    selectedSaccoStatus: string;
+    yearsInSacco: string;
+    yearsInSaccoStatus: string;
+    cooperativeMembership: string;
+    cooperativeMembershipStatus: string;
+    farmerGroup: string;
+    farmerGroupStatus: string;
+    peerGuarantees: string;
+    peerGuaranteesStatus: string;
+    extensionOfficer: string;
+    extensionOfficerStatus: string;
+    climateTraining: string;
+    climateTrainingStatus: string;
+    verificationChecklist: {
+      idDocument: string;
+      coopLetter: string;
+      onsiteVisit: string;
+    };
   };
   climate: {
     irrigation: string;
@@ -100,7 +121,28 @@ const emptyForm: FormState = {
     inputPurchases: "",
   },
   finance: { previousLoans: "No", repaymentHistory: "Good", avgIncomePerSeason: "0", outstandingLoans: "0", savings: "0", avgMonthlyIncome: "0", mobileMoneyActivity: "Low", altIncomeSources: "", existingDebts: "" },
-  community: { cooperative: "", references: "", verified: false },
+  community: {
+    cooperative: "",
+    references: "",
+    verified: false,
+    saccoMembership: "",
+    saccoMembershipStatus: "Pending",
+    selectedSacco: "",
+    selectedSaccoStatus: "Pending",
+    yearsInSacco: "",
+    yearsInSaccoStatus: "Pending",
+    cooperativeMembership: "",
+    cooperativeMembershipStatus: "Pending",
+    farmerGroup: "",
+    farmerGroupStatus: "Pending",
+    peerGuarantees: "",
+    peerGuaranteesStatus: "Pending",
+    extensionOfficer: "",
+    extensionOfficerStatus: "Pending",
+    climateTraining: "",
+    climateTrainingStatus: "Pending",
+    verificationChecklist: { idDocument: "Pending", coopLetter: "Pending", onsiteVisit: "Pending" },
+  },
   climate: { irrigation: "None", soilType: "Loam", droughtHistory: "None" },
 };
 
@@ -209,6 +251,12 @@ export default function NewAssessment() {
     if (!p.loanAmount || Number.isNaN(Number(p.loanAmount.replace(/[^0-9.]/g, ""))) ) e.loanAmount = "Enter amount";
     if (!p.loanPurpose || p.loanPurpose.trim().length < 3) e.loanPurpose = "Describe loan purpose";
     return e;
+  }
+
+  function badgeClass(status: string) {
+    if (status === "Verified") return "inline-flex items-center rounded-full bg-green-600/10 px-2 py-0.5 text-xs font-medium text-green-600";
+    if (status === "Self Declared") return "inline-flex items-center rounded-full bg-muted/10 px-2 py-0.5 text-xs font-medium text-muted-foreground";
+    return "inline-flex items-center rounded-full bg-yellow-600/10 px-2 py-0.5 text-xs font-medium text-yellow-600";
   }
 
   function cancel() {
@@ -626,23 +674,135 @@ export default function NewAssessment() {
           )}
 
           {current === 3 && (
-            <FormCard title="Community & Verification" desc="Cooperative memberships and references.">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label>Cooperative</Label>
-                  <Input value={form.community.cooperative} onChange={(e) => update("community", { cooperative: e.target.value })} />
+            <FormCard title="Community & Verification" desc="Cooperative memberships, SACCO and verification status.">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-muted/40 text-muted-foreground">
+                      <Home className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">Memberships</div>
+                      <div className="text-sm text-muted-foreground">SACCOs, cooperatives and farmer groups</div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2 items-end">
+                    <div>
+                      <Label>SACCO Membership</Label>
+                      <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1" value={form.community.saccoMembership} onChange={(e) => update("community", { saccoMembership: e.target.value })}>
+                        <option value="">Select</option>
+                        <option>Yes</option>
+                        <option>No</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label>Select SACCO</Label>
+                      <Input value={form.community.selectedSacco} onChange={(e) => update("community", { selectedSacco: e.target.value })} />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label>Years in SACCO</Label>
+                      <Input value={form.community.yearsInSacco} onChange={(e) => update("community", { yearsInSacco: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label>Cooperative Membership</Label>
+                      <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1" value={form.community.cooperativeMembership} onChange={(e) => update("community", { cooperativeMembership: e.target.value })}>
+                        <option value="">Select</option>
+                        <option>Member</option>
+                        <option>Non-member</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>Farmer Group</Label>
+                    <Input value={form.community.farmerGroup} onChange={(e) => update("community", { farmerGroup: e.target.value })} />
+                  </div>
+
+                  <div>
+                    <Label>Peer Guarantees</Label>
+                    <Input value={form.community.peerGuarantees} onChange={(e) => update("community", { peerGuarantees: e.target.value })} />
+                    <div className="mt-1 text-xs text-muted-foreground">Is there a peer guarantee or co-signer within the group?</div>
+                  </div>
                 </div>
-                <div>
-                  <Label>References</Label>
-                  <Input value={form.community.references} onChange={(e) => update("community", { references: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Verified</Label>
-                  <div className="mt-2">
-                    <label className="inline-flex items-center gap-2">
-                      <input type="checkbox" checked={form.community.verified} onChange={(e) => update("community", { verified: e.target.checked })} />
-                      <span className="text-sm text-muted-foreground">Onsite verification available</span>
-                    </label>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-muted/40 text-muted-foreground">
+                      <Layers className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">Verification</div>
+                      <div className="text-sm text-muted-foreground">Verification state for membership and documents</div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2 items-center">
+                    <div>
+                      <Label>Extension Officer</Label>
+                      <Input value={form.community.extensionOfficer} onChange={(e) => update("community", { extensionOfficer: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label>Climate Training</Label>
+                      <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1" value={form.community.climateTraining} onChange={(e) => update("community", { climateTraining: e.target.value })}>
+                        <option value="">Select</option>
+                        <option>Yes</option>
+                        <option>No</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>Verification Checklist</Label>
+                    <div className="grid gap-2">
+                      <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-background p-2">
+                        <div>
+                          <div className="text-sm font-medium">ID Document</div>
+                          <div className="text-xs text-muted-foreground">Copy of ID or national identifier</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <select className="flex h-8 rounded-md border border-input bg-transparent px-2 py-0.5 text-sm" value={form.community.verificationChecklist.idDocument} onChange={(e) => update("community", { verificationChecklist: { ...form.community.verificationChecklist, idDocument: e.target.value } })}>
+                            <option>Pending</option>
+                            <option>Self Declared</option>
+                            <option>Verified</option>
+                          </select>
+                          <span className={badgeClass(form.community.verificationChecklist.idDocument)}>{form.community.verificationChecklist.idDocument}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-background p-2">
+                        <div>
+                          <div className="text-sm font-medium">Cooperative Letter</div>
+                          <div className="text-xs text-muted-foreground">Letter confirming membership</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <select className="flex h-8 rounded-md border border-input bg-transparent px-2 py-0.5 text-sm" value={form.community.verificationChecklist.coopLetter} onChange={(e) => update("community", { verificationChecklist: { ...form.community.verificationChecklist, coopLetter: e.target.value } })}>
+                            <option>Pending</option>
+                            <option>Self Declared</option>
+                            <option>Verified</option>
+                          </select>
+                          <span className={badgeClass(form.community.verificationChecklist.coopLetter)}>{form.community.verificationChecklist.coopLetter}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-background p-2">
+                        <div>
+                          <div className="text-sm font-medium">On-site Visit</div>
+                          <div className="text-xs text-muted-foreground">Field verification status</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <select className="flex h-8 rounded-md border border-input bg-transparent px-2 py-0.5 text-sm" value={form.community.verificationChecklist.onsiteVisit} onChange={(e) => update("community", { verificationChecklist: { ...form.community.verificationChecklist, onsiteVisit: e.target.value } })}>
+                            <option>Pending</option>
+                            <option>Self Declared</option>
+                            <option>Verified</option>
+                          </select>
+                          <span className={badgeClass(form.community.verificationChecklist.onsiteVisit)}>{form.community.verificationChecklist.onsiteVisit}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
