@@ -216,6 +216,8 @@ export default function NewAssessment() {
   const [processing, setProcessing] = useState(false);
   const [processStage, setProcessStage] = useState(0);
   const mountedRef = useRef(true);
+  const [finalDecision, setFinalDecision] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   function update<T extends keyof FormState>(section: T, patch: Partial<FormState[T]>) {
     setForm((f) => ({ ...f, [section]: { ...f[section], ...patch } }));
@@ -303,6 +305,29 @@ export default function NewAssessment() {
     if (status === "Verified") return "inline-flex items-center rounded-full bg-green-600/10 px-2 py-0.5 text-xs font-medium text-green-600";
     if (status === "Self Declared") return "inline-flex items-center rounded-full bg-muted/10 px-2 py-0.5 text-xs font-medium text-muted-foreground";
     return "inline-flex items-center rounded-full bg-yellow-600/10 px-2 py-0.5 text-xs font-medium text-yellow-600";
+  }
+
+  function computeLoanRecommendation(f: FormState) {
+    const loanRequested = f.personal.loanAmount ? Number(String(f.personal.loanAmount).replace(/[^0-9.]/g, '')) || 0 : 0;
+    const readiness = computeFinanceReadiness(f);
+    const product = readiness >= 75 ? 'Standard Crop Loan' : readiness >= 50 ? 'Conditional Climate Loan' : 'Small Starter Loan';
+    const suggestedAmount = loanRequested > 0 ? loanRequested : Math.round((readiness / 100) * 50000) || 10000;
+    const interestLow = readiness >= 75 ? 6 : readiness >= 50 ? 10 : 14;
+    const interestHigh = readiness >= 75 ? 9 : readiness >= 50 ? 14 : 18;
+    const repaymentMonths = readiness >= 75 ? '12-24 months' : readiness >= 50 ? '12-36 months' : '6-18 months';
+    const conditions: string[] = [];
+    if (readiness < 60) conditions.push('Require collateral or peer guarantee');
+    if (f.community.verificationChecklist.onsiteVisit !== 'Verified') conditions.push('Schedule on-site visit');
+    if (f.climate.cropDiversification !== 'Yes') conditions.push('Encourage crop diversification training');
+    const climateConsiderations = `Drought risk: ${computeClimateIntelligence(f).droughtRisk}%, Flood risk: ${computeClimateIntelligence(f).floodRisk}%`;
+    return {
+      product,
+      suggestedAmount,
+      interestRange: `${interestLow}% - ${interestHigh}%`,
+      repaymentMonths,
+      conditions,
+      climateConsiderations,
+    };
   }
 
   function computeCompleteness(f: FormState) {
@@ -736,6 +761,65 @@ export default function NewAssessment() {
     // simply navigate back to dashboard. The route uses Link to keep SPA behavior.
   }
 
+  // Action handlers
+  function handleApprove() {
+    // placeholder: in real app, send decision to backend
+    // eslint-disable-next-line no-console
+    console.log('Decision: Approve');
+  }
+
+  function handleRequestMoreInfo() {
+    // eslint-disable-next-line no-console
+    console.log('Decision: Request More Information');
+  }
+
+  function handleDecline() {
+    // eslint-disable-next-line no-console
+    console.log('Decision: Decline');
+  }
+
+  function handleExportPDF() {
+    // Simple printable export: open a new window and print
+    try {
+      const rec = computeLoanRecommendation(form);
+      const html = `
+        <html>
+          <head>
+            <title>Assessment Export</title>
+          </head>
+          <body>
+            <h1>Loan Assessment - ${form.personal.fullName || 'Farmer'}</h1>
+            <p>Recommended product: ${rec.product}</p>
+            <p>Suggested amount: KES ${rec.suggestedAmount.toLocaleString()}</p>
+            <p>Interest: ${rec.interestRange}</p>
+            <p>Repayment: ${rec.repaymentMonths}</p>
+            <pre>${JSON.stringify(form, null, 2)}</pre>
+          </body>
+        </html>
+      `;
+      const w = window.open('', '_blank');
+      if (w) {
+        w.document.write(html);
+        w.document.close();
+        w.print();
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e);
+    }
+  }
+
+  function handleSaveAssessment() {
+    setSaving(true);
+    try {
+      localStorage.setItem('newAssessmentDraft', JSON.stringify(form));
+      // eslint-disable-next-line no-console
+      console.log('Assessment saved');
+    } finally {
+      setTimeout(() => setSaving(false), 600);
+    }
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -1043,6 +1127,90 @@ export default function NewAssessment() {
                         </div>
                       </aside>
                     </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Loan Recommendation */}
+              <div className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Loan Recommendation</CardTitle>
+                        <CardDescription>Final suggested product, terms and decision actions</CardDescription>
+                      </div>
+                      <div className="text-sm text-muted-foreground">Prepared: {new Date().toLocaleDateString()}</div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {(() => {
+                      const rec = computeLoanRecommendation(form);
+                      return (
+                        <div className="space-y-4">
+                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                            <div className="rounded-lg border border-border bg-card p-4">
+                              <div className="text-sm text-muted-foreground">Recommended Loan Product</div>
+                              <div className="mt-2 text-lg font-semibold">{rec.product}</div>
+                            </div>
+
+                            <div className="rounded-lg border border-border bg-card p-4">
+                              <div className="text-sm text-muted-foreground">Suggested Loan Amount</div>
+                              <div className="mt-2 text-lg font-semibold">KES {rec.suggestedAmount.toLocaleString()}</div>
+                            </div>
+
+                            <div className="rounded-lg border border-border bg-card p-4">
+                              <div className="text-sm text-muted-foreground">Suggested Interest Range</div>
+                              <div className="mt-2 text-lg font-semibold">{rec.interestRange}</div>
+                            </div>
+
+                            <div className="rounded-lg border border-border bg-card p-4">
+                              <div className="text-sm text-muted-foreground">Suggested Repayment Period</div>
+                              <div className="mt-2 text-lg font-semibold">{rec.repaymentMonths}</div>
+                            </div>
+                          </div>
+
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <div className="rounded-md border border-border bg-card p-4">
+                              <div className="text-sm font-medium">Conditions</div>
+                              <ul className="mt-2 list-disc pl-4 text-sm text-muted-foreground">
+                                {rec.conditions.length ? rec.conditions.map((c) => <li key={c}>{c}</li>) : <li>No special conditions</li>}
+                              </ul>
+                            </div>
+
+                            <div className="rounded-md border border-border bg-card p-4">
+                              <div className="text-sm font-medium">Climate Considerations</div>
+                              <div className="mt-2 text-sm text-muted-foreground">{rec.climateConsiderations}</div>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex gap-2">
+                              <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setFinalDecision('Approve'); handleApprove(); }}>
+                                Approve
+                              </Button>
+                              <Button className="bg-amber-500 hover:bg-amber-600 text-white" onClick={() => { setFinalDecision('Request More Information'); handleRequestMoreInfo(); }}>
+                                Request More Information
+                              </Button>
+                              <Button className="bg-destructive hover:opacity-90 text-white" onClick={() => { setFinalDecision('Decline'); handleDecline(); }}>
+                                Decline
+                              </Button>
+                            </div>
+
+                            <div className="flex gap-2">
+                              <Button variant="outline" onClick={() => handleExportPDF()}>Export PDF</Button>
+                              <Button variant="ghost" onClick={() => handleSaveAssessment()}>Save Assessment</Button>
+                            </div>
+                          </div>
+
+                          {finalDecision && (
+                            <div className="mt-2 rounded-md border border-border bg-muted/5 p-3">
+                              <div className="text-sm">Final Decision: <strong>{finalDecision}</strong></div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </CardContent>
                 </Card>
               </div>
