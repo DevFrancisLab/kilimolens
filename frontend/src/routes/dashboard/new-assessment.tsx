@@ -570,6 +570,108 @@ export default function NewAssessment() {
     return rows;
   }
 
+  /* Knowledge Graph visualization component */
+  function KnowledgeGraph({ f }: { f: FormState }) {
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const [hovered, setHovered] = useState<string | null>(null);
+    const [dashOffset, setDashOffset] = useState(0);
+
+    useEffect(() => {
+      let raf = 0;
+      const loop = () => {
+        setDashOffset((d) => (d + 1) % 1000);
+        raf = requestAnimationFrame(loop);
+      };
+      raf = requestAnimationFrame(loop);
+      return () => cancelAnimationFrame(raf);
+    }, []);
+
+    const center = { x: 360, y: 200 };
+    const radius = 140;
+    const nodesData = useMemo(() => {
+      const labels = [
+        { id: 'sacco', label: 'SACCO' },
+        { id: 'cooperative', label: 'Cooperative' },
+        { id: 'climate', label: 'Climate Data' },
+        { id: 'loans', label: 'Loans' },
+        { id: 'inputs', label: 'Input Supplier' },
+        { id: 'extension', label: 'Extension Officer' },
+        { id: 'weather', label: 'Weather' },
+      ];
+      return labels.map((n, i) => {
+        const angle = (i / labels.length) * Math.PI * 2 - Math.PI / 2;
+        return { ...n, x: Math.round(center.x + Math.cos(angle) * radius), y: Math.round(center.y + Math.sin(angle) * radius) };
+      });
+    }, []);
+
+    const centerNode = { id: 'farmer', label: f.personal.fullName || 'Farmer', x: center.x, y: center.y };
+
+    return (
+      <div className="mt-6">
+        <div className="text-sm font-medium mb-3">Knowledge Graph</div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="md:col-span-2 rounded-lg border border-border bg-card p-4" ref={containerRef}>
+            <svg viewBox="0 0 720 420" className="w-full h-[420px]">
+              <defs>
+                <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feDropShadow dx="0" dy="2" stdDeviation="4" floodColor="#000" floodOpacity="0.08" />
+                </filter>
+              </defs>
+
+              {/* connections */}
+              {nodesData.map((n) => (
+                <g key={n.id}>
+                  <line x1={centerNode.x} y1={centerNode.y} x2={n.x} y2={n.y} stroke="#93c5fd" strokeWidth={2} strokeDasharray="6 6" strokeDashoffset={dashOffset} />
+                </g>
+              ))}
+
+              {/* peripheral nodes */}
+              {nodesData.map((n) => (
+                <g key={n.id} transform={`translate(${n.x}, ${n.y})`} style={{ cursor: 'pointer' }} onMouseEnter={() => setHovered(n.id)} onMouseLeave={() => setHovered(null)}>
+                  <circle r={28} cx={0} cy={0} fill={hovered === n.id ? '#ecfeff' : '#ffffff'} stroke={hovered === n.id ? '#06b6d4' : '#e6eef9'} strokeWidth={2} filter="url(#shadow)" />
+                  <text x={0} y={5} textAnchor="middle" className="text-sm font-semibold" style={{ fontSize: 12, fill: '#0f172a' }}>{n.label}</text>
+                </g>
+              ))}
+
+              {/* center node */}
+              <g transform={`translate(${centerNode.x}, ${centerNode.y})`} style={{ cursor: 'default' }}>
+                <circle r={36} cx={0} cy={0} fill="#0ea5e9" stroke="#0369a1" strokeWidth={3} filter="url(#shadow)" />
+                <text x={0} y={6} textAnchor="middle" className="text-sm font-semibold" style={{ fontSize: 14, fill: '#ffffff' }}>{centerNode.label}</text>
+              </g>
+            </svg>
+          </div>
+
+          <div className="space-y-3">
+            <div className="rounded-md border border-border bg-card p-4">
+              <div className="text-sm font-medium">Node Details</div>
+              <div className="mt-2 text-sm text-muted-foreground">
+                {hovered ? (
+                  (() => {
+                    const n = nodesData.find((x) => x.id === hovered)!;
+                    return (
+                      <div>
+                        <div className="font-semibold">{n.label}</div>
+                        <div className="mt-1 text-sm">Relationship: Connected to Farmer</div>
+                        <div className="mt-2 text-xs text-muted-foreground">Mock metadata: sourceConfidence — {Math.round(Math.random() * 40 + 60)}%</div>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <div className="text-sm text-muted-foreground">Hover a node to see details here. Nodes animate and show relations to the farmer.</div>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-md border border-border bg-card p-4">
+              <div className="text-sm font-medium">Controls</div>
+              <div className="mt-2 text-sm text-muted-foreground">Use hover to highlight nodes. Connections animate to show graph flow.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function ScoreCard({
     title,
     score,
@@ -887,6 +989,11 @@ export default function NewAssessment() {
                     </div>
                   </CardContent>
                 </Card>
+              </div>
+          
+              {/* Knowledge Graph */}
+              <div className="mt-6 md:col-span-3">
+                <KnowledgeGraph f={form} />
               </div>
               
               {/* Explainable AI Assistant */}
