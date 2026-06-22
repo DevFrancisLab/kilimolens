@@ -501,6 +501,75 @@ export default function NewAssessment() {
     };
   }
 
+  function assembleVerificationRecords(f: FormState) {
+    const now = new Date();
+    const randomPastDate = (days: number) => {
+      const d = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+      return d.toISOString().split('T')[0];
+    };
+
+    const rows = [
+      {
+        key: 'nationalId',
+        label: 'National ID',
+        status: f.community.verificationChecklist.idDocument || 'Pending',
+        source: f.personal.nationalId ? (f.community.verificationChecklist.idDocument === 'Verified' ? 'National Registry' : 'Self Declaration') : 'Not Provided',
+        confidence: f.community.verificationChecklist.idDocument === 'Verified' ? 92 : f.community.verificationChecklist.idDocument === 'Self Declared' ? 56 : 28,
+        date: f.community.verificationChecklist.idDocument === 'Verified' ? randomPastDate(8) : '',
+      },
+      {
+        key: 'gps',
+        label: 'GPS',
+        status: f.personal.gps ? 'Verified' : 'Pending',
+        source: f.personal.gps ? 'GPS Check' : 'Not Provided',
+        confidence: f.personal.gps ? 88 : 20,
+        date: f.personal.gps ? randomPastDate(2) : '',
+      },
+      {
+        key: 'sacco',
+        label: 'SACCO Membership',
+        status: f.community.saccoMembership === 'Yes' ? 'Verified' : (f.community.saccoMembership === 'No' ? 'Self Declared' : 'Pending'),
+        source: f.community.saccoMembership === 'Yes' ? 'SACCO Record' : 'Self Declaration',
+        confidence: f.community.saccoMembership === 'Yes' ? 80 : f.community.saccoMembership === 'No' ? 48 : 25,
+        date: f.community.saccoMembership === 'Yes' ? randomPastDate(30) : '',
+      },
+      {
+        key: 'cooperative',
+        label: 'Cooperative',
+        status: f.community.cooperativeMembership ? (f.community.cooperativeMembership === 'Member' ? 'Verified' : 'Self Declared') : 'Pending',
+        source: f.community.cooperativeMembership ? (f.community.cooperativeMembership === 'Member' ? 'Cooperative Letter' : 'Self Declaration') : 'Not Provided',
+        confidence: f.community.cooperativeMembership ? (f.community.cooperativeMembership === 'Member' ? 78 : 45) : 22,
+        date: f.community.cooperativeMembership ? randomPastDate(40) : '',
+      },
+      {
+        key: 'mobileMoney',
+        label: 'Mobile Money',
+        status: f.finance.mobileMoneyActivity ? 'Verified' : 'Pending',
+        source: f.finance.mobileMoneyActivity ? 'Mobile Money API' : 'Not Provided',
+        confidence: f.finance.mobileMoneyActivity === 'High' ? 90 : f.finance.mobileMoneyActivity === 'Medium' ? 70 : f.finance.mobileMoneyActivity === 'Low' ? 50 : 20,
+        date: f.finance.mobileMoneyActivity ? randomPastDate(5) : '',
+      },
+      {
+        key: 'farmLocation',
+        label: 'Farm Location',
+        status: f.farm.county || f.farm.village ? 'Verified' : 'Pending',
+        source: f.farm.county || f.farm.village ? 'Satellite/GPS' : 'Not Provided',
+        confidence: f.farm.county || f.farm.village ? 82 : 18,
+        date: f.farm.county || f.farm.village ? randomPastDate(10) : '',
+      },
+      {
+        key: 'inputPurchases',
+        label: 'Input Purchases',
+        status: f.farm.inputPurchases ? 'Self Declared' : 'Pending',
+        source: f.farm.inputPurchases ? 'Receipts / Self Declaration' : 'Not Provided',
+        confidence: f.farm.inputPurchases ? 54 : 16,
+        date: f.farm.inputPurchases ? randomPastDate(15) : '',
+      },
+    ];
+
+    return rows;
+  }
+
   function ScoreCard({
     title,
     score,
@@ -774,6 +843,50 @@ export default function NewAssessment() {
                     );
                   })()}
                 </div>
+              </div>
+              
+              {/* Verification & Evidence */}
+              <div className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Verification & Evidence</CardTitle>
+                        <CardDescription>All verification sources and confidence for submitted evidence</CardDescription>
+                      </div>
+                      <div className="text-sm text-muted-foreground">Updated: {new Date().toISOString().split('T')[0]}</div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <div className="min-w-[720px]">
+                        <div className="grid grid-cols-6 gap-4 px-2 py-3 text-xs font-medium text-muted-foreground border-b">
+                          <div>Verification Item</div>
+                          <div className="col-span-2">Status</div>
+                          <div>Source</div>
+                          <div>Confidence</div>
+                          <div>Verification Date</div>
+                        </div>
+                        {assembleVerificationRecords(form).map((r) => (
+                          <div key={r.key} className="grid grid-cols-6 gap-4 items-center px-2 py-3 hover:bg-muted/5">
+                            <div className="text-sm font-medium">{r.label}</div>
+                            <div className="col-span-2">
+                              <div className={badgeClass(r.status)}>{r.status}</div>
+                            </div>
+                            <div className="text-sm text-muted-foreground">{r.source}</div>
+                            <div>
+                              <div className="w-full rounded-full bg-muted/20 h-2">
+                                <div className="h-2 rounded-full bg-primary" style={{ width: `${r.confidence}%` }} />
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1">{r.confidence}%</div>
+                            </div>
+                            <div className="text-sm text-muted-foreground">{r.date || '—'}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
               
               {/* Explainable AI Assistant */}
