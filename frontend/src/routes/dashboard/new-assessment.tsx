@@ -928,9 +928,159 @@ export default function NewAssessment() {
           )}
 
           {current === 5 && (
-            <FormCard title="Review Assessment" desc="Review all entered information before submission.">
-              <div className="space-y-3">
-                <pre className="rounded-md bg-background p-3 text-sm">{JSON.stringify(form, null, 2)}</pre>
+            <FormCard title="Review Assessment" desc="Summarise information and run AI assessment when ready.">
+              <div className="space-y-6">
+                {/* completeness */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-muted-foreground">Estimated completeness</div>
+                    <div className="text-2xl font-semibold">{computeCompleteness(form)}%</div>
+                  </div>
+                  <div>
+                    <Button variant="ghost" onClick={saveDraft}>Save Draft</Button>
+                  </div>
+                </div>
+
+                {/* Sections summary */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle>Personal Information</CardTitle>
+                          <CardDescription>{form.personal.fullName || "—"}</CardDescription>
+                        </div>
+                        <div>
+                          <Button variant="ghost" onClick={() => setCurrent(0)}>Edit</Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <dl className="grid gap-2">
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Full name</dt><dd>{form.personal.fullName || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">National ID</dt><dd>{form.personal.nationalId || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Phone</dt><dd>{form.personal.phone || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Gender / Age</dt><dd>{(form.personal.gender || '—') + ' / ' + (form.personal.age || '—')}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Location</dt><dd>{[form.personal.county, form.personal.subCounty, form.personal.ward, form.personal.village].filter(Boolean).join(', ') || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Loan requested</dt><dd>{form.personal.loanAmount ? form.personal.loanAmount + ' — ' + (form.personal.loanPurpose || '') : '—'}</dd></div>
+                      </dl>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle>Farm Information</CardTitle>
+                          <CardDescription>{form.farm.primaryCrop || '—'}</CardDescription>
+                        </div>
+                        <div>
+                          <Button variant="ghost" onClick={() => setCurrent(1)}>Edit</Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <dl className="grid gap-2">
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Farm size</dt><dd>{form.farm.farmSize || form.farm.hectares || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Ownership</dt><dd>{form.farm.landOwnership || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Primary / Secondary crops</dt><dd>{[form.farm.primaryCrop, form.farm.secondaryCrops].filter(Boolean).join(' / ') || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Livestock</dt><dd>{form.farm.livestock || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Irrigation</dt><dd>{form.farm.irrigation || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Last / Expected harvest (kg)</dt><dd>{(form.farm.previousHarvest || '—') + ' / ' + (form.farm.expectedHarvest || '—')}</dd></div>
+                      </dl>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle>Financial Behaviour</CardTitle>
+                          <CardDescription>{form.finance.repaymentHistory || '—'}</CardDescription>
+                        </div>
+                        <div>
+                          <Button variant="ghost" onClick={() => setCurrent(2)}>Edit</Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <dl className="grid gap-2">
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Previous loans</dt><dd>{form.finance.previousLoans || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Outstanding</dt><dd>{form.finance.outstandingLoans || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Savings</dt><dd>{form.finance.savings || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Avg monthly income</dt><dd>{form.finance.avgMonthlyIncome || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Mobile money</dt><dd>{form.finance.mobileMoneyActivity || '—'}</dd></div>
+                      </dl>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle>Community Information</CardTitle>
+                          <CardDescription>{form.community.selectedSacco || form.community.cooperative || '—'}</CardDescription>
+                        </div>
+                        <div>
+                          <Button variant="ghost" onClick={() => setCurrent(3)}>Edit</Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <dl className="grid gap-2">
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">SACCO membership</dt><dd>{form.community.saccoMembership || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Selected SACCO</dt><dd>{form.community.selectedSacco || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Years in SACCO</dt><dd>{form.community.yearsInSacco || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Cooperative / Farmer group</dt><dd>{[form.community.cooperativeMembership, form.community.farmerGroup].filter(Boolean).join(' / ') || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Peer guarantees</dt><dd>{form.community.peerGuarantees || '—'}</dd></div>
+                      </dl>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle>Climate Practices</CardTitle>
+                          <CardDescription>{form.climate.primaryCrop || '—'}</CardDescription>
+                        </div>
+                        <div>
+                          <Button variant="ghost" onClick={() => setCurrent(4)}>Edit</Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <dl className="grid gap-2">
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Crop diversification</dt><dd>{form.climate.cropDiversification || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Drought-resistant crops</dt><dd>{form.climate.droughtResistantCrops || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Water harvesting</dt><dd>{form.climate.waterHarvesting || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Soil conservation</dt><dd>{form.climate.soilConservation || '—'}</dd></div>
+                        <div className="flex justify-between text-sm"><dt className="text-muted-foreground">Livelihood diversification</dt><dd>{form.climate.livelihoodDiversification || '—'}</dd></div>
+                      </dl>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Verification summary */}
+                <div>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Verification Summary</CardTitle>
+                      <CardDescription>Statuses for key verification items</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between"><div className="text-sm text-muted-foreground">ID Document</div><div className={badgeClass(form.community.verificationChecklist.idDocument)}>{form.community.verificationChecklist.idDocument}</div></div>
+                        <div className="flex items-center justify-between"><div className="text-sm text-muted-foreground">Cooperative Letter</div><div className={badgeClass(form.community.verificationChecklist.coopLetter)}>{form.community.verificationChecklist.coopLetter}</div></div>
+                        <div className="flex items-center justify-between"><div className="text-sm text-muted-foreground">On-site Visit</div><div className={badgeClass(form.community.verificationChecklist.onsiteVisit)}>{form.community.verificationChecklist.onsiteVisit}</div></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <div className="mt-4">
+                    <Button variant="default" className="w-full" onClick={() => setCurrent(6)}>Run AI Assessment</Button>
+                  </div>
+                </div>
               </div>
             </FormCard>
           )}
