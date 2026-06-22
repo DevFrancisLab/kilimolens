@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, Save, X } from "lucide-react";
 
@@ -15,9 +16,18 @@ export const Route = createFileRoute("/dashboard/new-assessment")({
 
 type FormState = {
   personal: {
-    name: string;
+    fullName: string;
+    nationalId: string;
     phone: string;
-    idNumber: string;
+    gender: string;
+    age: string;
+    county: string;
+    subCounty: string;
+    ward: string;
+    village: string;
+    gps: string;
+    loanAmount: string;
+    loanPurpose: string;
   };
   farm: {
     county: string;
@@ -43,12 +53,26 @@ type FormState = {
 };
 
 const emptyForm: FormState = {
-  personal: { name: "", phone: "", idNumber: "" },
+  personal: {
+    fullName: "",
+    nationalId: "",
+    phone: "",
+    gender: "",
+    age: "",
+    county: "",
+    subCounty: "",
+    ward: "",
+    village: "",
+    gps: "",
+    loanAmount: "",
+    loanPurpose: "",
+  },
   farm: { county: "", village: "", hectares: "", mainCrop: "" },
   finance: { previousLoans: "No", repaymentHistory: "Good", avgIncomePerSeason: "0" },
   community: { cooperative: "", references: "", verified: false },
   climate: { irrigation: "None", soilType: "Loam", droughtHistory: "None" },
 };
+
 
 function Stepper({ steps, current }: { steps: string[]; current: number }) {
   return (
@@ -109,11 +133,19 @@ export default function NewAssessment() {
     }
   });
 
+  const [personalErrors, setPersonalErrors] = useState<Record<string, string>>({});
+
   function update<T extends keyof FormState>(section: T, patch: Partial<FormState[T]>) {
     setForm((f) => ({ ...f, [section]: { ...f[section], ...patch } }));
   }
 
   function next() {
+    // run step-specific validation
+    if (current === 0) {
+      const errs = validatePersonal(form.personal);
+      setPersonalErrors(errs);
+      if (Object.keys(errs).length > 0) return; // prevent advancing
+    }
     setCurrent((c) => Math.min(c + 1, steps.length - 1));
   }
   function back() {
@@ -129,6 +161,23 @@ export default function NewAssessment() {
     } catch (e) {
       console.error(e);
     }
+  }
+
+  function validatePersonal(p: FormState["personal"]) {
+    const e: Record<string, string> = {};
+    if (!p.fullName || p.fullName.trim().length < 3) e.fullName = "Enter full name";
+    if (!p.nationalId || !/^[0-9A-Za-z-]{4,}$/.test(p.nationalId)) e.nationalId = "Enter a valid ID";
+    if (!p.phone || !/^\+?[0-9\s-]{6,}$/.test(p.phone)) e.phone = "Enter a valid phone number";
+    if (!p.gender) e.gender = "Select gender";
+    if (!p.age || Number.isNaN(Number(p.age)) || Number(p.age) <= 0) e.age = "Enter a valid age";
+    if (!p.county) e.county = "Required";
+    if (!p.subCounty) e.subCounty = "Required";
+    if (!p.ward) e.ward = "Required";
+    if (!p.village) e.village = "Required";
+    if (!p.gps || !/^-?\d+(\.\d+)?,\s*-?\d+(\.\d+)?$/.test(p.gps)) e.gps = "Enter GPS as 'lat, lon'";
+    if (!p.loanAmount || Number.isNaN(Number(p.loanAmount.replace(/[^0-9.]/g, ""))) ) e.loanAmount = "Enter amount";
+    if (!p.loanPurpose || p.loanPurpose.trim().length < 3) e.loanPurpose = "Describe loan purpose";
+    return e;
   }
 
   function cancel() {
@@ -150,18 +199,131 @@ export default function NewAssessment() {
             <FormCard title="Personal Information" desc="Basic farmer and applicant details.">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <Label>Name</Label>
-                  <Input value={form.personal.name} onChange={(e) => update("personal", { name: e.target.value })} />
+                  <Label>Full Name</Label>
+                  <Input
+                    value={form.personal.fullName}
+                    onChange={(e) => update("personal", { fullName: e.target.value })}
+                    className={cn(personalErrors.fullName && "border-destructive")}
+                  />
                 </div>
+
                 <div>
-                  <Label>Phone</Label>
-                  <Input value={form.personal.phone} onChange={(e) => update("personal", { phone: e.target.value })} />
+                  <Label>National ID</Label>
+                  <Input
+                    value={form.personal.nationalId}
+                    onChange={(e) => update("personal", { nationalId: e.target.value })}
+                    className={cn(personalErrors.nationalId && "border-destructive")}
+                  />
                 </div>
+
                 <div>
-                  <Label>ID Number</Label>
-                  <Input value={form.personal.idNumber} onChange={(e) => update("personal", { idNumber: e.target.value })} />
+                  <Label>Phone Number</Label>
+                  <Input
+                    value={form.personal.phone}
+                    onChange={(e) => update("personal", { phone: e.target.value })}
+                    className={cn(personalErrors.phone && "border-destructive")}
+                  />
+                </div>
+
+                <div>
+                  <Label>Gender</Label>
+                  <select
+                    className={cn(
+                      "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base focus-visible:outline-none",
+                      personalErrors.gender && "border-destructive",
+                    )}
+                    value={form.personal.gender}
+                    onChange={(e) => update("personal", { gender: e.target.value })}
+                  >
+                    <option value="">Select</option>
+                    <option>Female</option>
+                    <option>Male</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <Label>Age</Label>
+                  <Input
+                    value={form.personal.age}
+                    onChange={(e) => update("personal", { age: e.target.value })}
+                    className={cn(personalErrors.age && "border-destructive")}
+                  />
+                </div>
+
+                <div>
+                  <Label>County</Label>
+                  <Input
+                    value={form.personal.county}
+                    onChange={(e) => update("personal", { county: e.target.value })}
+                    className={cn(personalErrors.county && "border-destructive")}
+                  />
+                </div>
+
+                <div>
+                  <Label>Sub County</Label>
+                  <Input
+                    value={form.personal.subCounty}
+                    onChange={(e) => update("personal", { subCounty: e.target.value })}
+                    className={cn(personalErrors.subCounty && "border-destructive")}
+                  />
+                </div>
+
+                <div>
+                  <Label>Ward</Label>
+                  <Input
+                    value={form.personal.ward}
+                    onChange={(e) => update("personal", { ward: e.target.value })}
+                    className={cn(personalErrors.ward && "border-destructive")}
+                  />
+                </div>
+
+                <div>
+                  <Label>Village</Label>
+                  <Input
+                    value={form.personal.village}
+                    onChange={(e) => update("personal", { village: e.target.value })}
+                    className={cn(personalErrors.village && "border-destructive")}
+                  />
+                </div>
+
+                <div>
+                  <Label>GPS Coordinates</Label>
+                  <Input
+                    placeholder="lat, lon"
+                    value={form.personal.gps}
+                    onChange={(e) => update("personal", { gps: e.target.value })}
+                    className={cn(personalErrors.gps && "border-destructive")}
+                  />
+                </div>
+
+                <div>
+                  <Label>Loan Amount Requested</Label>
+                  <Input
+                    value={form.personal.loanAmount}
+                    onChange={(e) => update("personal", { loanAmount: e.target.value })}
+                    className={cn(personalErrors.loanAmount && "border-destructive")}
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <Label>Purpose of Loan</Label>
+                  <Input
+                    value={form.personal.loanPurpose}
+                    onChange={(e) => update("personal", { loanPurpose: e.target.value })}
+                    className={cn(personalErrors.loanPurpose && "border-destructive")}
+                  />
                 </div>
               </div>
+
+              {/* show validation messages */}
+              {Object.keys(personalErrors).length > 0 && (
+                <div className="mt-2 space-y-1 text-sm text-destructive">
+                  {Object.entries(personalErrors).map(([k, v]) => (
+                    <div key={k}>{v}</div>
+                  ))}
+                </div>
+              )}
             </FormCard>
           )}
 
