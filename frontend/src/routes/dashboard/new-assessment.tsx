@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Save, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Save, X, MapPin, Home, Seedling, Layers, Activity, Calendar, Droplet, ShoppingCart } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/new-assessment")({
   head: () => ({ meta: [{ title: "New Assessment — KilimoLens" }] }),
@@ -34,6 +34,16 @@ type FormState = {
     village: string;
     hectares: string;
     mainCrop: string;
+    farmSize: string;
+    landOwnership: string;
+    primaryCrop: string;
+    secondaryCrops: string;
+    livestock: string;
+    yearsFarming: string;
+    irrigation: string;
+    previousHarvest: string;
+    expectedHarvest: string;
+    inputPurchases: string;
   };
   finance: {
     previousLoans: string;
@@ -67,7 +77,22 @@ const emptyForm: FormState = {
     loanAmount: "",
     loanPurpose: "",
   },
-  farm: { county: "", village: "", hectares: "", mainCrop: "" },
+  farm: {
+    county: "",
+    village: "",
+    hectares: "",
+    mainCrop: "",
+    farmSize: "",
+    landOwnership: "",
+    primaryCrop: "",
+    secondaryCrops: "",
+    livestock: "",
+    yearsFarming: "",
+    irrigation: "",
+    previousHarvest: "",
+    expectedHarvest: "",
+    inputPurchases: "",
+  },
   finance: { previousLoans: "No", repaymentHistory: "Good", avgIncomePerSeason: "0" },
   community: { cooperative: "", references: "", verified: false },
   climate: { irrigation: "None", soilType: "Loam", droughtHistory: "None" },
@@ -328,23 +353,134 @@ export default function NewAssessment() {
           )}
 
           {current === 1 && (
-            <FormCard title="Farm Information" desc="Location and production details.">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label>County</Label>
-                  <Input value={form.farm.county} onChange={(e) => update("farm", { county: e.target.value })} />
+            <FormCard title="Farm Information" desc="Details about the farm, production and inputs.">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-muted/40 text-muted-foreground">
+                      <MapPin className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">Location</div>
+                      <div className="text-sm text-muted-foreground">County · Sub County · Ward · Village</div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label>County</Label>
+                      <Input value={form.farm.county} onChange={(e) => update("farm", { county: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label>Sub County</Label>
+                      <Input value={form.farm.subCounty} onChange={(e) => update("farm", { subCounty: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label>Ward</Label>
+                      <Input value={form.farm.ward} onChange={(e) => update("farm", { ward: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label>Village</Label>
+                      <Input value={form.farm.village} onChange={(e) => update("farm", { village: e.target.value })} />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label>Farm Size (hectares)</Label>
+                      <Input value={form.farm.farmSize} onChange={(e) => update("farm", { farmSize: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label>Land Ownership</Label>
+                      <select
+                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base focus-visible:outline-none"
+                        value={form.farm.landOwnership}
+                        onChange={(e) => update("farm", { landOwnership: e.target.value })}
+                      >
+                        <option value="">Select</option>
+                        <option>Owned</option>
+                        <option>Leased</option>
+                        <option>Communal</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label>Years Farming</Label>
+                      <Input value={form.farm.yearsFarming} onChange={(e) => update("farm", { yearsFarming: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label>Livestock (type / count)</Label>
+                      <Input value={form.farm.livestock} onChange={(e) => update("farm", { livestock: e.target.value })} />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <Label>Village</Label>
-                  <Input value={form.farm.village} onChange={(e) => update("farm", { village: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Hectares</Label>
-                  <Input value={form.farm.hectares} onChange={(e) => update("farm", { hectares: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Main crop</Label>
-                  <Input value={form.farm.mainCrop} onChange={(e) => update("farm", { mainCrop: e.target.value })} />
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-muted/40 text-muted-foreground">
+                      <Seedling className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">Production</div>
+                      <div className="text-sm text-muted-foreground">Crops, irrigation and harvests</div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label>Primary Crop</Label>
+                      <select
+                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base focus-visible:outline-none"
+                        value={form.farm.primaryCrop}
+                        onChange={(e) => update("farm", { primaryCrop: e.target.value })}
+                      >
+                        <option value="">Select</option>
+                        <option>Maize</option>
+                        <option>Beans</option>
+                        <option>Sorghum</option>
+                        <option>Tea</option>
+                        <option>Horticulture</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label>Secondary Crops</Label>
+                      <Input placeholder="Comma-separated" value={form.farm.secondaryCrops} onChange={(e) => update("farm", { secondaryCrops: e.target.value })} />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label>Irrigation</Label>
+                      <select
+                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base focus-visible:outline-none"
+                        value={form.farm.irrigation}
+                        onChange={(e) => update("farm", { irrigation: e.target.value })}
+                      >
+                        <option value="">Select</option>
+                        <option>None</option>
+                        <option>Rainfed</option>
+                        <option>Drip</option>
+                        <option>Sprinkler</option>
+                      </select>
+                    </div>
+                    <div>
+                      <Label>Input Purchases (seed, fertiliser)</Label>
+                      <Input value={form.farm.inputPurchases} onChange={(e) => update("farm", { inputPurchases: e.target.value })} />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label>Previous Harvest (kg)</Label>
+                      <Input value={form.farm.previousHarvest} onChange={(e) => update("farm", { previousHarvest: e.target.value })} />
+                    </div>
+                    <div>
+                      <Label>Expected Harvest (kg)</Label>
+                      <Input value={form.farm.expectedHarvest} onChange={(e) => update("farm", { expectedHarvest: e.target.value })} />
+                    </div>
+                  </div>
                 </div>
               </div>
             </FormCard>
