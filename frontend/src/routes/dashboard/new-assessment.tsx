@@ -86,6 +86,12 @@ type FormState = {
     irrigation: string;
     soilType: string;
     droughtHistory: string;
+    cropDiversification: string;
+    droughtResistantCrops: string;
+    waterHarvesting: string;
+    soilConservation: string;
+    livelihoodDiversification: string;
+    climateSmartTraining: string;
   };
 };
 
@@ -143,7 +149,7 @@ const emptyForm: FormState = {
     climateTrainingStatus: "Pending",
     verificationChecklist: { idDocument: "Pending", coopLetter: "Pending", onsiteVisit: "Pending" },
   },
-  climate: { irrigation: "None", soilType: "Loam", droughtHistory: "None" },
+  climate: { irrigation: "None", soilType: "Loam", droughtHistory: "None", cropDiversification: "No", droughtResistantCrops: "No", waterHarvesting: "No", soilConservation: "No", livelihoodDiversification: "No", climateSmartTraining: "No" },
 };
 
 
@@ -810,20 +816,113 @@ export default function NewAssessment() {
           )}
 
           {current === 4 && (
-            <FormCard title="Climate & Farming Practices" desc="Irrigation, soil and historical climate exposure.">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label>Irrigation</Label>
-                  <Input value={form.climate.irrigation} onChange={(e) => update("climate", { irrigation: e.target.value })} />
+            <FormCard title="Climate & Farming Practices" desc="Irrigation, soil and climate-smart practices.">
+              <div className="grid gap-6 md:grid-cols-3">
+                <div className="md:col-span-2 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-muted/40 text-muted-foreground">
+                      <Seedling className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">Farming Practices</div>
+                      <div className="text-sm text-muted-foreground">Adoption of climate-smart agriculture practices</div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label>Crop Diversification</Label>
+                      <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1" value={form.climate.cropDiversification} onChange={(e) => update("climate", { cropDiversification: e.target.value })}>
+                        <option>No</option>
+                        <option>Yes</option>
+                      </select>
+                      <div className="mt-1 text-xs text-muted-foreground">Multiple crops reduce exposure to single-crop failures.</div>
+                    </div>
+
+                    <div>
+                      <Label>Drought-resistant Crops</Label>
+                      <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1" value={form.climate.droughtResistantCrops} onChange={(e) => update("climate", { droughtResistantCrops: e.target.value })}>
+                        <option>No</option>
+                        <option>Yes</option>
+                      </select>
+                      <div className="mt-1 text-xs text-muted-foreground">Using drought-tolerant varieties increases resilience to dry spells.</div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label>Water Harvesting</Label>
+                      <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1" value={form.climate.waterHarvesting} onChange={(e) => update("climate", { waterHarvesting: e.target.value })}>
+                        <option>No</option>
+                        <option>Yes</option>
+                      </select>
+                      <div className="mt-1 text-xs text-muted-foreground">Rainwater harvesting improves water availability during dry periods.</div>
+                    </div>
+
+                    <div>
+                      <Label>Soil Conservation</Label>
+                      <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1" value={form.climate.soilConservation} onChange={(e) => update("climate", { soilConservation: e.target.value })}>
+                        <option>No</option>
+                        <option>Yes</option>
+                      </select>
+                      <div className="mt-1 text-xs text-muted-foreground">Practices like terracing and cover crops maintain soil fertility and reduce erosion.</div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label>Livelihood Diversification</Label>
+                      <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1" value={form.climate.livelihoodDiversification} onChange={(e) => update("climate", { livelihoodDiversification: e.target.value })}>
+                        <option>No</option>
+                        <option>Yes</option>
+                      </select>
+                      <div className="mt-1 text-xs text-muted-foreground">Alternative livelihoods reduce household vulnerability to crop shocks.</div>
+                    </div>
+
+                    <div>
+                      <Label>Irrigation</Label>
+                      <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1" value={form.climate.irrigation} onChange={(e) => update("climate", { irrigation: e.target.value })}>
+                        <option>None</option>
+                        <option>Rainfed</option>
+                        <option>Drip</option>
+                        <option>Sprinkler</option>
+                      </select>
+                      <div className="mt-1 text-xs text-muted-foreground">Irrigation increases yield stability across seasons.</div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>Climate-smart Training</Label>
+                    <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1" value={form.climate.climateSmartTraining} onChange={(e) => update("climate", { climateSmartTraining: e.target.value })}>
+                      <option>No</option>
+                      <option>Yes</option>
+                    </select>
+                    <div className="mt-1 text-xs text-muted-foreground">Training in climate-smart practices supports adoption and improves outcomes.</div>
+                  </div>
                 </div>
-                <div>
-                  <Label>Soil type</Label>
-                  <Input value={form.climate.soilType} onChange={(e) => update("climate", { soilType: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Drought history</Label>
-                  <Input value={form.climate.droughtHistory} onChange={(e) => update("climate", { droughtHistory: e.target.value })} />
-                </div>
+
+                <aside className="space-y-4">
+                  <div className="rounded-md border border-border bg-card p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-muted/40 text-muted-foreground">
+                        <Droplet className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold">Why these practices matter</div>
+                        <p className="mt-2 text-sm text-muted-foreground">Adopting climate-smart farming practices increases resilience to weather shocks and can improve long-term productivity. These practices inform risk assessment but do not guarantee loan approval — they help lenders understand adaptive capacity.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border border-border bg-background p-3 text-sm">
+                    <div className="font-medium">Quick Tips</div>
+                    <ul className="mt-2 space-y-1 text-muted-foreground">
+                      <li>Combine crop diversification with water harvesting for best results.</li>
+                      <li>Soil conservation preserves long-term yield potential.</li>
+                      <li>Training increases the chance that practices are implemented correctly.</li>
+                    </ul>
+                  </div>
+                </aside>
               </div>
             </FormCard>
           )}
