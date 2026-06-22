@@ -425,6 +425,46 @@ export default function NewAssessment() {
     return Math.max(10, Math.min(100, Math.round(base * 0.8 + verified * 6)));
   }
 
+  /* Explainable AI helpers (mocked) */
+  function computeAISummary(f: FormState) {
+    const fin = computeFinanceReadiness(f);
+    const farm = computeFarmProductivity(f);
+    const climate = computeClimateResilience(f);
+    const rec = deriveRecommendation(fin);
+    return `The model estimates a ${rec.toLowerCase()} outcome. Finance readiness is ${fin}%, farm productivity ${farm}%, and climate resilience ${climate}%. Confidence is ${deriveConfidence(fin)}%.`;
+  }
+
+  function computeStrengths(f: FormState) {
+    const strengths: string[] = [];
+    const fin = computeFinanceReadiness(f);
+    const farm = computeFarmProductivity(f);
+    if (fin >= 60) strengths.push('Consistent repayment signals and positive savings');
+    if (farm >= 60) strengths.push('Strong expected productivity and adequate farm size');
+    if (f.community.saccoMembership === 'Yes') strengths.push('Community membership and peer support');
+    if (f.climate.climateSmartTraining === 'Yes') strengths.push('Farmer has relevant climate-smart training');
+    return strengths;
+  }
+
+  function computeRisks(f: FormState) {
+    const risks: string[] = [];
+    const env = computeEnvironmentalRisk(f);
+    const fin = computeFinanceReadiness(f);
+    if (env >= 60) risks.push('Elevated environmental exposure (soil/water concerns)');
+    if (fin < 50) risks.push('Weak financial buffers or repayment concerns');
+    if (f.climate.droughtHistory && f.climate.droughtHistory !== 'None') risks.push('History of droughts in the area');
+    if (f.community.verificationChecklist.onsiteVisit !== 'Verified') risks.push('No on-site verification recorded');
+    return risks;
+  }
+
+  function computeKeyFactors(f: FormState) {
+    const factors: string[] = [];
+    if (f.finance.repaymentHistory) factors.push(`Repayment history: ${f.finance.repaymentHistory}`);
+    if (f.finance.savings) factors.push(`Savings: ${f.finance.savings}`);
+    if (f.farm.primaryCrop) factors.push(`Primary crop: ${f.farm.primaryCrop}`);
+    if (f.climate.cropDiversification) factors.push(`Crop diversification: ${f.climate.cropDiversification}`);
+    return factors.slice(0, 5);
+  }
+
   function ScoreCard({
     title,
     score,
@@ -619,6 +659,57 @@ export default function NewAssessment() {
                     className={cn(personalErrors.loanPurpose && "border-destructive")}
                   />
                 </div>
+              </div>
+              
+              {/* Explainable AI Assistant */}
+              <div className="mt-6">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>AI Assistant</CardTitle>
+                        <CardDescription>Explainable assessment and rationale</CardDescription>
+                      </div>
+                      <div className="text-sm text-muted-foreground">Confidence: {deriveConfidence(computeFinanceReadiness(form))}%</div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <div className="md:col-span-2 space-y-3">
+                        <div className="text-sm font-medium">AI Summary</div>
+                        <div className="text-sm text-muted-foreground">{computeAISummary(form)}</div>
+
+                        <div className="mt-4">
+                          <div className="text-sm font-medium">Recommendation</div>
+                          <div className="mt-1 text-sm">{deriveRecommendation(computeFinanceReadiness(form))} — {deriveConfidence(computeFinanceReadiness(form)) > 75 ? 'Proceed with standard terms.' : 'Consider conditional approval with monitoring.'}</div>
+                        </div>
+                      </div>
+
+                      <aside className="space-y-3">
+                        <div>
+                          <div className="text-sm font-medium">Strengths</div>
+                          <ul className="mt-2 list-disc pl-4 text-sm text-muted-foreground">
+                            {computeStrengths(form).length > 0 ? computeStrengths(form).map((s) => <li key={s}>{s}</li>) : <li>None highlighted</li>}
+                          </ul>
+                        </div>
+
+                        <div>
+                          <div className="text-sm font-medium">Risks</div>
+                          <ul className="mt-2 list-disc pl-4 text-sm text-muted-foreground">
+                            {computeRisks(form).length > 0 ? computeRisks(form).map((r) => <li key={r}>{r}</li>) : <li>No immediate risks detected</li>}
+                          </ul>
+                        </div>
+
+                        <div>
+                          <div className="text-sm font-medium">Key Factors</div>
+                          <ul className="mt-2 list-disc pl-4 text-sm text-muted-foreground">
+                            {computeKeyFactors(form).length > 0 ? computeKeyFactors(form).map((k) => <li key={k}>{k}</li>) : <li>Insufficient data</li>}
+                          </ul>
+                        </div>
+                      </aside>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
 
               {/* show validation messages */}
