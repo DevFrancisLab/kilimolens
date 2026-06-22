@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Save, X, MapPin, Home, Seedling, Layers, Activity, Calendar, Droplet, ShoppingCart, CreditCard, Wallet, Smartphone, DollarSign, Briefcase, Info, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Save, X, MapPin, Home, Seedling, Layers, Activity, Calendar, Droplet, ShoppingCart, CreditCard, Wallet, Smartphone, DollarSign, Briefcase, Info, CheckCircle2, CloudRain, AlertTriangle, Sun, Thermometer, TrendingUp, Leaf, BarChart2 } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/new-assessment")({
   head: () => ({ meta: [{ title: "New Assessment — KilimoLens" }] }),
@@ -465,6 +465,42 @@ export default function NewAssessment() {
     return factors.slice(0, 5);
   }
 
+  /* Climate intelligence (mock) */
+  function computeClimateIntelligence(f: FormState) {
+    // deterministic mock values based on some inputs
+    const rainfallBase = 600; // mm/year base
+    let rainfall = rainfallBase;
+    if (f.climate.waterHarvesting === 'Yes') rainfall += 80;
+    if (f.climate.irrigation && f.climate.irrigation !== 'None') rainfall += 40;
+    if (f.climate.droughtHistory && f.climate.droughtHistory !== 'None') rainfall -= 200;
+
+    // Risks: simple heuristics
+    const floodRisk = Math.max(5, Math.min(95, Math.round((rainfall - 300) / 8)));
+    const droughtRisk = Math.max(5, Math.min(95, Math.round((1200 - rainfall) / 12)));
+
+    // NDVI 0-1 mapped from crop diversification and expected harvest
+    const ndvi = Math.max(0.2, Math.min(0.9, ( (f.climate.cropDiversification === 'Yes' ? 0.65 : 0.45) + (Number(f.farm.expectedHarvest || 0) > 0 ? 0.05 : 0) ) ));
+
+    // Temperature trend (mock): increasing if no soil conservation
+    const tempTrend = f.climate.soilConservation === 'Yes' ? 'Stable' : 'Increasing';
+
+    // Soil suitability: basic heuristic from soilType and irrigation
+    let soilScore = 50;
+    if (f.climate.soilType === 'Loam') soilScore += 20;
+    if (f.climate.soilType === 'Sandy') soilScore -= 10;
+    if (f.climate.irrigation && f.climate.irrigation !== 'None') soilScore += 10;
+    const soilSuitability = Math.max(0, Math.min(100, soilScore));
+
+    return {
+      rainfall: Math.round(rainfall),
+      floodRisk,
+      droughtRisk,
+      ndvi: Math.round(ndvi * 100) / 100,
+      tempTrend,
+      soilSuitability,
+    };
+  }
+
   function ScoreCard({
     title,
     score,
@@ -658,6 +694,85 @@ export default function NewAssessment() {
                     onChange={(e) => update("personal", { loanPurpose: e.target.value })}
                     className={cn(personalErrors.loanPurpose && "border-destructive")}
                   />
+                </div>
+              </div>
+              
+              {/* Climate Intelligence */}
+              <div className="mt-6">
+                <div className="text-sm font-medium mb-3">Climate Intelligence</div>
+                <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                  {(() => {
+                    const c = computeClimateIntelligence(form);
+                    return (
+                      <>
+                        <div className="rounded-lg border border-border bg-card p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="text-sm text-muted-foreground">Rainfall</div>
+                              <div className="mt-2 text-lg font-semibold">{c.rainfall} mm/yr</div>
+                              <div className="mt-1 text-sm text-muted-foreground">Annual estimated rainfall</div>
+                            </div>
+                            <CloudRain className="h-7 w-7 text-sky-500" />
+                          </div>
+                        </div>
+
+                        <div className="rounded-lg border border-border bg-card p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="text-sm text-muted-foreground">Flood Risk</div>
+                              <div className="mt-2 text-lg font-semibold">{c.floodRisk}%</div>
+                              <div className="mt-1 text-sm text-muted-foreground">Likelihood of surface water flooding</div>
+                            </div>
+                            <AlertTriangle className="h-7 w-7 text-amber-500" />
+                          </div>
+                        </div>
+
+                        <div className="rounded-lg border border-border bg-card p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="text-sm text-muted-foreground">Drought Risk</div>
+                              <div className="mt-2 text-lg font-semibold">{c.droughtRisk}%</div>
+                              <div className="mt-1 text-sm text-muted-foreground">Probability of seasonal drought</div>
+                            </div>
+                            <Sun className="h-7 w-7 text-yellow-500" />
+                          </div>
+                        </div>
+
+                        <div className="rounded-lg border border-border bg-card p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="text-sm text-muted-foreground">NDVI</div>
+                              <div className="mt-2 text-lg font-semibold">{c.ndvi}</div>
+                              <div className="mt-1 text-sm text-muted-foreground">Vegetation index (0-1)</div>
+                            </div>
+                            <Leaf className="h-7 w-7 text-emerald-500" />
+                          </div>
+                        </div>
+
+                        <div className="rounded-lg border border-border bg-card p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="text-sm text-muted-foreground">Temperature Trend</div>
+                              <div className="mt-2 text-lg font-semibold">{c.tempTrend}</div>
+                              <div className="mt-1 text-sm text-muted-foreground">Recent average change</div>
+                            </div>
+                            <Thermometer className="h-7 w-7 text-rose-500" />
+                          </div>
+                        </div>
+
+                        <div className="rounded-lg border border-border bg-card p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="text-sm text-muted-foreground">Soil Suitability</div>
+                              <div className="mt-2 text-lg font-semibold">{c.soilSuitability}%</div>
+                              <div className="mt-1 text-sm text-muted-foreground">Estimated suitability for cropping</div>
+                            </div>
+                            <BarChart2 className="h-7 w-7 text-violet-500" />
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
               
