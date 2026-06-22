@@ -365,6 +365,126 @@ export default function NewAssessment() {
     return Math.min(95, Math.round(50 + score * 0.4));
   }
 
+  /* Score computations for the six cards (mock heuristics) */
+  function computeFarmProductivity(f: FormState) {
+    let score = 50;
+    try {
+      const prev = Number(String(f.farm.previousHarvest || "").replace(/[^0-9.]/g, "") || 0);
+      const expected = Number(String(f.farm.expectedHarvest || "").replace(/[^0-9.]/g, "") || 0);
+      const size = Number(String(f.farm.farmSize || "").replace(/[^0-9.]/g, "") || 0);
+      if (expected > prev && expected > 0) score += 15;
+      if (size >= 1) score += 10;
+      if (f.farm.primaryCrop) score += 5;
+      score = Math.max(0, Math.min(100, Math.round(score)));
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error(e);
+    }
+    return score;
+  }
+
+  function computeClimateResilience(f: FormState) {
+    let points = 0;
+    const yes = (v?: string) => (v === "Yes" ? 1 : 0);
+    points += yes(f.climate.cropDiversification) * 20;
+    points += yes(f.climate.droughtResistantCrops) * 20;
+    points += yes(f.climate.waterHarvesting) * 15;
+    points += yes(f.climate.soilConservation) * 15;
+    points += yes(f.climate.climateSmartTraining) * 15;
+    points += yes(f.climate.livelihoodDiversification) * 15;
+    return Math.max(0, Math.min(100, points));
+  }
+
+  function computeEnvironmentalRisk(f: FormState) {
+    // Higher value = better (lower risk). We'll invert for display as risk score.
+    let safe = 50;
+    const yes = (v?: string) => (v === "Yes" ? 0 : 1);
+    safe -= yes(f.climate.soilConservation) * 15;
+    safe -= yes(f.climate.waterHarvesting) * 12;
+    const out = Number(String(f.finance.outstandingLoans || "").replace(/[^0-9.]/g, "") || 0);
+    if (out > 5000) safe -= 20;
+    const risk = Math.max(0, Math.min(100, 100 - safe));
+    return risk;
+  }
+
+  function computeCommunityTrust(f: FormState) {
+    let score = 30;
+    if (f.community.saccoMembership === "Yes") score += 20;
+    if (f.community.cooperativeMembership && f.community.cooperativeMembership !== "") score += 10;
+    const checklist = f.community.verificationChecklist;
+    if (checklist.idDocument === "Verified") score += 15;
+    if (checklist.coopLetter === "Verified") score += 10;
+    if (checklist.onsiteVisit === "Verified") score += 15;
+    return Math.max(0, Math.min(100, score));
+  }
+
+  function computeDataConfidence(f: FormState) {
+    // Tie to completeness and verification coverage
+    const base = computeCompleteness(f);
+    const verified = [f.community.verificationChecklist.idDocument, f.community.verificationChecklist.coopLetter, f.community.verificationChecklist.onsiteVisit].filter((v) => v === "Verified").length;
+    return Math.max(10, Math.min(100, Math.round(base * 0.8 + verified * 6)));
+  }
+
+  function ScoreCard({
+    title,
+    score,
+    explanation,
+    details,
+    Icon,
+  }: {
+    title: string;
+    score: number;
+    explanation: string;
+    details: React.ReactNode;
+    Icon?: React.ComponentType<{ className?: string }>;
+  }) {
+    const [open, setOpen] = useState(false);
+    const r = 28; // radius
+    const c = 2 * Math.PI * r;
+    const pct = Math.max(0, Math.min(100, score));
+    const dash = (pct / 100) * c;
+
+    return (
+      <div className={cn(
+          "group cursor-pointer rounded-lg border bg-card p-4 transition-transform duration-150",
+          open ? "shadow-lg scale-100" : "hover:scale-105 hover:shadow-md",
+        )} onClick={() => setOpen((s) => !s)}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <svg width="68" height="68" viewBox="0 0 68 68">
+                <g transform="translate(34,34)">
+                  <circle r={r} cx="0" cy="0" fill="transparent" stroke="#e6e9ee" strokeWidth="6" />
+                  <circle
+                    r={r}
+                    cx="0"
+                    cy="0"
+                    fill="transparent"
+                    stroke="#06b6d4"
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                    strokeDasharray={`${dash} ${c - dash}`}
+                    style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }}
+                  />
+                </g>
+              </svg>
+              <div className="absolute left-0 top-0 flex h-16 w-16 items-center justify-center text-sm font-semibold">{pct}%</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium">{title}</div>
+              <div className="text-sm text-muted-foreground">{explanation}</div>
+            </div>
+          </div>
+          {Icon ? <Icon className="h-6 w-6 text-muted-foreground" /> : null}
+        </div>
+
+        <div className={cn("mt-3 overflow-hidden transition-max-h duration-200", open ? "max-h-96" : "max-h-0")}>
+          <div className="text-sm text-muted-foreground">{details}</div>
+        </div>
+      </div>
+    );
+  }
+
   function cancel() {
     // simply navigate back to dashboard. The route uses Link to keep SPA behavior.
   }
@@ -1277,6 +1397,101 @@ export default function NewAssessment() {
                     <div className="text-sm font-medium">Suggested Recommendation</div>
                     <div className="mt-2">{deriveRecommendation(computeFinanceReadiness(form))} — {deriveConfidence(computeFinanceReadiness(form)) > 75 ? 'Proceed with standard terms' : 'Consider conditional loan with monitoring and capacity support.'}</div>
                     <div className="mt-3 text-sm text-muted-foreground">Notes: This is a frontend-only mock. For production, replace with model output from the AI service.</div>
+                  </div>
+                </div>
+
+                {/* Score cards */}
+                <div className="mt-6">
+                  <div className="text-sm font-medium mb-3">Detailed Scores</div>
+                  <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                    <ScoreCard
+                      title="Financial Behaviour"
+                      score={computeFinanceReadiness(form)}
+                      explanation="Repayment history, savings and mobile activity"
+                      details={<>
+                        <div className="font-medium">Key drivers</div>
+                        <ul className="mt-2 list-disc pl-4 text-sm text-muted-foreground">
+                          <li>Repayment history: {form.finance.repaymentHistory}</li>
+                          <li>Savings: {form.finance.savings || '—'}</li>
+                          <li>Mobile activity: {form.finance.mobileMoneyActivity}</li>
+                        </ul>
+                      </>}
+                      Icon={CreditCard}
+                    />
+
+                    <ScoreCard
+                      title="Farm Productivity"
+                      score={computeFarmProductivity(form)}
+                      explanation="Harvests, farm size and crop mix"
+                      details={<>
+                        <div className="font-medium">Productivity factors</div>
+                        <ul className="mt-2 list-disc pl-4 text-sm text-muted-foreground">
+                          <li>Previous harvest: {form.farm.previousHarvest || '—'}</li>
+                          <li>Expected harvest: {form.farm.expectedHarvest || '—'}</li>
+                          <li>Farm size: {form.farm.farmSize || '—'}</li>
+                        </ul>
+                      </>}
+                      Icon={Seedling}
+                    />
+
+                    <ScoreCard
+                      title="Climate Resilience"
+                      score={computeClimateResilience(form)}
+                      explanation="Adoption of climate-smart practices"
+                      details={<>
+                        <div className="font-medium">Practices</div>
+                        <ul className="mt-2 list-disc pl-4 text-sm text-muted-foreground">
+                          <li>Crop diversification: {form.climate.cropDiversification}</li>
+                          <li>Water harvesting: {form.climate.waterHarvesting}</li>
+                          <li>Soil conservation: {form.climate.soilConservation}</li>
+                        </ul>
+                      </>}
+                      Icon={Droplet}
+                    />
+
+                    <ScoreCard
+                      title="Environmental Risk"
+                      score={computeEnvironmentalRisk(form)}
+                      explanation="Exposure to environmental hazards"
+                      details={<>
+                        <div className="font-medium">Risk signals</div>
+                        <ul className="mt-2 list-disc pl-4 text-sm text-muted-foreground">
+                          <li>Irrigation: {form.climate.irrigation}</li>
+                          <li>Soil conservation: {form.climate.soilConservation}</li>
+                          <li>Outstanding loans: {form.finance.outstandingLoans || '—'}</li>
+                        </ul>
+                      </>}
+                      Icon={Activity}
+                    />
+
+                    <ScoreCard
+                      title="Community Trust"
+                      score={computeCommunityTrust(form)}
+                      explanation="Memberships and verified documents"
+                      details={<>
+                        <div className="font-medium">Community signals</div>
+                        <ul className="mt-2 list-disc pl-4 text-sm text-muted-foreground">
+                          <li>SACCO member: {form.community.saccoMembership || '—'}</li>
+                          <li>Verified ID: {form.community.verificationChecklist.idDocument}</li>
+                          <li>On-site visit: {form.community.verificationChecklist.onsiteVisit}</li>
+                        </ul>
+                      </>}
+                      Icon={Layers}
+                    />
+
+                    <ScoreCard
+                      title="Data Confidence"
+                      score={computeDataConfidence(form)}
+                      explanation="Completeness and verified evidence"
+                      details={<>
+                        <div className="font-medium">Confidence drivers</div>
+                        <ul className="mt-2 list-disc pl-4 text-sm text-muted-foreground">
+                          <li>Form completeness: {computeCompleteness(form)}%</li>
+                          <li>Verified items: {[form.community.verificationChecklist.idDocument, form.community.verificationChecklist.coopLetter, form.community.verificationChecklist.onsiteVisit].filter(Boolean).join(', ') || '—'}</li>
+                        </ul>
+                      </>}
+                      Icon={Smartphone}
+                    />
                   </div>
                 </div>
               </div>
