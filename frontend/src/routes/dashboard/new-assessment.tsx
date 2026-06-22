@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Save, X, MapPin, Home, Seedling, Layers, Activity, Calendar, Droplet, ShoppingCart } from "lucide-react";
+import { ArrowLeft, ArrowRight, Save, X, MapPin, Home, Seedling, Layers, Activity, Calendar, Droplet, ShoppingCart, CreditCard, Wallet, Smartphone, DollarSign, Briefcase, Info } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/new-assessment")({
   head: () => ({ meta: [{ title: "New Assessment — KilimoLens" }] }),
@@ -49,6 +49,12 @@ type FormState = {
     previousLoans: string;
     repaymentHistory: string;
     avgIncomePerSeason: string;
+    outstandingLoans: string;
+    savings: string;
+    avgMonthlyIncome: string;
+    mobileMoneyActivity: string;
+    altIncomeSources: string;
+    existingDebts: string;
   };
   community: {
     cooperative: string;
@@ -93,7 +99,7 @@ const emptyForm: FormState = {
     expectedHarvest: "",
     inputPurchases: "",
   },
-  finance: { previousLoans: "No", repaymentHistory: "Good", avgIncomePerSeason: "0" },
+  finance: { previousLoans: "No", repaymentHistory: "Good", avgIncomePerSeason: "0", outstandingLoans: "0", savings: "0", avgMonthlyIncome: "0", mobileMoneyActivity: "Low", altIncomeSources: "", existingDebts: "" },
   community: { cooperative: "", references: "", verified: false },
   climate: { irrigation: "None", soilType: "Loam", droughtHistory: "None" },
 };
@@ -487,19 +493,133 @@ export default function NewAssessment() {
           )}
 
           {current === 2 && (
-            <FormCard title="Financial Behaviour" desc="Understand past loans and repayment behaviour.">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label>Previous loans</Label>
-                  <Input value={form.finance.previousLoans} onChange={(e) => update("finance", { previousLoans: e.target.value })} />
+            <FormCard title="Financial Behaviour" desc="Understand past loans, savings and cash flows.">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-muted/40 text-muted-foreground">
+                      <CreditCard className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">Loans & Repayment</div>
+                      <div className="text-sm text-muted-foreground">History of borrowing and current obligations</div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label>
+                        Previous Loans
+                        <span title="Have they taken loans before?" className="ml-2 inline-block text-muted-foreground">
+                          <Info className="inline h-4 w-4" />
+                        </span>
+                      </Label>
+                      <Input value={form.finance.previousLoans} onChange={(e) => update("finance", { previousLoans: e.target.value })} />
+                      <div className="mt-1 text-xs text-muted-foreground">Knowing prior loans helps assess repayment patterns.</div>
+                    </div>
+                    <div>
+                      <Label>
+                        Repayment History
+                        <span title="Repayment punctuality and defaults" className="ml-2 inline-block text-muted-foreground">
+                          <Info className="inline h-4 w-4" />
+                        </span>
+                      </Label>
+                      <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1" value={form.finance.repaymentHistory} onChange={(e) => update("finance", { repaymentHistory: e.target.value })}>
+                        <option>Good</option>
+                        <option>Irregular</option>
+                        <option>Defaulted</option>
+                      </select>
+                      <div className="mt-1 text-xs text-muted-foreground">Reliable repayment increases approval likelihood.</div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label>
+                        Outstanding Loans
+                        <span title="Total unpaid loan balance" className="ml-2 inline-block text-muted-foreground">
+                          <Info className="inline h-4 w-4" />
+                        </span>
+                      </Label>
+                      <Input value={form.finance.outstandingLoans} onChange={(e) => update("finance", { outstandingLoans: e.target.value })} />
+                      <div className="mt-1 text-xs text-muted-foreground">High outstanding balances may reduce capacity to take new loans.</div>
+                    </div>
+
+                    <div>
+                      <Label>
+                        Savings
+                        <span title="Cash or formal savings" className="ml-2 inline-block text-muted-foreground">
+                          <Info className="inline h-4 w-4" />
+                        </span>
+                      </Label>
+                      <Input value={form.finance.savings} onChange={(e) => update("finance", { savings: e.target.value })} />
+                      <div className="mt-1 text-xs text-muted-foreground">Savings act as a buffer for shocks and indicate financial resilience.</div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <Label>Repayment history</Label>
-                  <Input value={form.finance.repaymentHistory} onChange={(e) => update("finance", { repaymentHistory: e.target.value })} />
-                </div>
-                <div>
-                  <Label>Avg income per season</Label>
-                  <Input value={form.finance.avgIncomePerSeason} onChange={(e) => update("finance", { avgIncomePerSeason: e.target.value })} />
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-muted/40 text-muted-foreground">
+                      <Wallet className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">Cashflow & Income</div>
+                      <div className="text-sm text-muted-foreground">Monthly income, mobile activity and alternative sources</div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label>
+                        Average Monthly Income
+                        <span title="Typical monthly earnings" className="ml-2 inline-block text-muted-foreground">
+                          <Info className="inline h-4 w-4" />
+                        </span>
+                      </Label>
+                      <Input value={form.finance.avgMonthlyIncome} onChange={(e) => update("finance", { avgMonthlyIncome: e.target.value })} />
+                      <div className="mt-1 text-xs text-muted-foreground">Average earnings help size appropriate loan amounts.</div>
+                    </div>
+
+                    <div>
+                      <Label>
+                        Mobile Money Activity
+                        <span title="Frequency & volume of mobile money transactions" className="ml-2 inline-block text-muted-foreground">
+                          <Info className="inline h-4 w-4" />
+                        </span>
+                      </Label>
+                      <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1" value={form.finance.mobileMoneyActivity} onChange={(e) => update("finance", { mobileMoneyActivity: e.target.value })}>
+                        <option>Low</option>
+                        <option>Medium</option>
+                        <option>High</option>
+                      </select>
+                      <div className="mt-1 text-xs text-muted-foreground">Active mobile money usage provides digital trace for income verification.</div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label>
+                        Alternative Income Sources
+                        <span title="Other income streams like casual labour, trade" className="ml-2 inline-block text-muted-foreground">
+                          <Info className="inline h-4 w-4" />
+                        </span>
+                      </Label>
+                      <Input value={form.finance.altIncomeSources} onChange={(e) => update("finance", { altIncomeSources: e.target.value })} />
+                      <div className="mt-1 text-xs text-muted-foreground">Diversified income reduces vulnerability to crop shocks.</div>
+                    </div>
+
+                    <div>
+                      <Label>
+                        Existing Debts
+                        <span title="Other liabilities or obligations" className="ml-2 inline-block text-muted-foreground">
+                          <Info className="inline h-4 w-4" />
+                        </span>
+                      </Label>
+                      <Input value={form.finance.existingDebts} onChange={(e) => update("finance", { existingDebts: e.target.value })} />
+                      <div className="mt-1 text-xs text-muted-foreground">Capture non-loan debts (family, suppliers) to better assess cashflow.</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </FormCard>
