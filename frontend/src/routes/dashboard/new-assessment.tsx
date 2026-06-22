@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import DashboardLayout from "@/components/dashboard/Layout";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Save, X, MapPin, Home, Seedling, Layers, Activity, Calendar, Droplet, ShoppingCart, CreditCard, Wallet, Smartphone, DollarSign, Briefcase, Info } from "lucide-react";
+import { ArrowLeft, ArrowRight, Save, X, MapPin, Home, Seedling, Layers, Activity, Calendar, Droplet, ShoppingCart, CreditCard, Wallet, Smartphone, DollarSign, Briefcase, Info, CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/new-assessment")({
   head: () => ({ meta: [{ title: "New Assessment — KilimoLens" }] }),
@@ -213,6 +213,9 @@ export default function NewAssessment() {
   });
 
   const [personalErrors, setPersonalErrors] = useState<Record<string, string>>({});
+  const [processing, setProcessing] = useState(false);
+  const [processStage, setProcessStage] = useState(0);
+  const mountedRef = useRef(true);
 
   function update<T extends keyof FormState>(section: T, patch: Partial<FormState[T]>) {
     setForm((f) => ({ ...f, [section]: { ...f[section], ...patch } }));
@@ -242,6 +245,43 @@ export default function NewAssessment() {
     }
   }
 
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const processingStages = [
+    "Collecting farmer profile",
+    "Verifying records",
+    "Loading climate intelligence",
+    "Building knowledge graph",
+    "Running ML models",
+    "Generating explanation",
+    "Preparing recommendation",
+  ];
+
+  async function runAIProcessing() {
+    setProcessing(true);
+    setProcessStage(0);
+    // simulate progress through stages
+    for (let i = 0; i < processingStages.length; i++) {
+      if (!mountedRef.current) return;
+      setProcessStage(i);
+      // each stage lasts between 600-1200ms to simulate work
+      // add a small delay
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise((res) => setTimeout(res, 800 + Math.random() * 600));
+    }
+    // short finalization pause
+    await new Promise((res) => setTimeout(res, 700));
+    if (!mountedRef.current) return;
+    setProcessing(false);
+    setProcessStage(0);
+    // navigate to AI results step
+    setCurrent(6);
+  }
+
   function validatePersonal(p: FormState["personal"]) {
     const e: Record<string, string> = {};
     if (!p.fullName || p.fullName.trim().length < 3) e.fullName = "Enter full name";
@@ -263,6 +303,66 @@ export default function NewAssessment() {
     if (status === "Verified") return "inline-flex items-center rounded-full bg-green-600/10 px-2 py-0.5 text-xs font-medium text-green-600";
     if (status === "Self Declared") return "inline-flex items-center rounded-full bg-muted/10 px-2 py-0.5 text-xs font-medium text-muted-foreground";
     return "inline-flex items-center rounded-full bg-yellow-600/10 px-2 py-0.5 text-xs font-medium text-yellow-600";
+  }
+
+  function computeCompleteness(f: FormState) {
+    // Count all primitive fields (strings) and compute percentage filled
+    const values: string[] = [];
+    Object.values(f.personal).forEach((v) => values.push(String(v || "")));
+    Object.values(f.farm).forEach((v) => values.push(String(v || "")));
+    Object.values(f.finance).forEach((v) => values.push(String(v || "")));
+    Object.values(f.community).forEach((v) => {
+      if (typeof v === "string") values.push(v || "");
+    });
+    Object.values(f.climate).forEach((v) => values.push(String(v || "")));
+
+    // include verification checklist fields explicitly
+    values.push(String(f.community.verificationChecklist.idDocument || ""));
+    values.push(String(f.community.verificationChecklist.coopLetter || ""));
+    values.push(String(f.community.verificationChecklist.onsiteVisit || ""));
+
+    const total = values.length;
+    const filled = values.filter((v) => v && v.trim() !== "" && v !== "Pending").length;
+    return Math.round((filled / Math.max(1, total)) * 100);
+  }
+
+  function computeFinanceReadiness(f: FormState) {
+    // Simple heuristic-based mock score (0-100)
+    let score = 50;
+    try {
+      if (f.finance.repaymentHistory === "Good") score += 12;
+      if (f.finance.repaymentHistory === "Irregular") score += 2;
+      if (f.finance.repaymentHistory === "Defaulted") score -= 20;
+
+      const savings = Number(String(f.finance.savings || "").replace(/[^0-9.]/g, "") || 0);
+      if (savings > 0) score += 8;
+
+      const outstanding = Number(String(f.finance.outstandingLoans || "").replace(/[^0-9.]/g, "") || 0);
+      if (outstanding === 0) score += 8;
+      if (outstanding > 0 && outstanding < 5000) score += 3;
+
+      if (f.finance.mobileMoneyActivity === "High") score += 6;
+      if (f.finance.mobileMoneyActivity === "Medium") score += 3;
+
+      // Clamp
+      score = Math.max(0, Math.min(100, Math.round(score)));
+    } catch (e) {
+      // fallback
+      // eslint-disable-next-line no-console
+      console.error(e);
+    }
+    return score;
+  }
+
+  function deriveRecommendation(score: number) {
+    if (score >= 80) return "Approve";
+    if (score >= 55) return "Conditional approval";
+    return "Decline";
+  }
+
+  function deriveConfidence(score: number) {
+    // Mock confidence: base 50 + 0.4 * score, capped 95
+    return Math.min(95, Math.round(50 + score * 0.4));
   }
 
   function cancel() {
@@ -1078,29 +1178,106 @@ export default function NewAssessment() {
                   </Card>
 
                   <div className="mt-4">
-                    <Button variant="default" className="w-full" onClick={() => setCurrent(6)}>Run AI Assessment</Button>
-                  </div>
+                      <Button variant="default" className="w-full" onClick={() => runAIProcessing()}>Run AI Assessment</Button>
+                    </div>
                 </div>
               </div>
             </FormCard>
           )}
 
-          {current === 6 && (
-            <FormCard title="AI Assessment Results" desc="Mocked AI results based on submitted data.">
-              <div className="space-y-4">
-                <div className="rounded-md border border-border bg-card p-4">
+            {/* Processing overlay */}
+            {processing && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80">
+                <div className="w-full max-w-2xl rounded-lg border border-border bg-card p-6 shadow-lg">
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="text-sm font-medium">Resilience Score</div>
-                      <div className="text-2xl font-semibold">68 / 100</div>
+                      <div className="text-lg font-semibold">Running AI Assessment</div>
+                      <div className="text-sm text-muted-foreground">This may take a few moments — we&apos;re analysing the submission.</div>
                     </div>
-                    <div className="text-sm text-muted-foreground">Confidence: 82%</div>
+                    <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-muted/20">
+                      <svg className="h-6 w-6 animate-spin text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10" strokeWidth="3" strokeOpacity="0.15" /><path d="M22 12a10 10 0 0 0-10-10" strokeWidth="3" strokeLinecap="round" /></svg>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 grid gap-3">
+                    {processingStages.map((s, i) => (
+                      <div key={s} className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`inline-flex h-9 w-9 items-center justify-center rounded-md ${i <= processStage ? 'bg-green-600/10 text-green-600' : 'bg-muted/10 text-muted-foreground'}`}>
+                            {i < processStage ? <CheckCircle2 className="h-5 w-5" /> : <span className={`h-2 w-2 rounded-full ${i === processStage ? 'bg-primary' : 'bg-muted'}`} />}
+                          </div>
+                          <div>
+                            <div className={`text-sm ${i === processStage ? 'font-medium text-foreground' : 'text-muted-foreground'}`}>{s}</div>
+                          </div>
+                        </div>
+                        <div className="text-sm text-muted-foreground">{i < processStage ? 'Done' : i === processStage ? 'Processing' : 'Pending'}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-6">
+                    <div className="h-2 w-full rounded-full bg-muted/20">
+                      <div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${Math.round(((processStage+1)/processingStages.length)*100)}%` }} />
+                    </div>
+                    <div className="mt-2 text-sm text-muted-foreground">{Math.round(((processStage+1)/processingStages.length)*100)}% complete</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          {current === 6 && (
+            <FormCard title="AI Assessment Results" desc="Mocked AI results based on submitted data.">
+              <div className="space-y-6">
+                {/* Top hero cards */}
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                  <div className="col-span-1 rounded-lg border border-border bg-gradient-to-br from-white/60 to-muted/5 p-4">
+                    <div className="text-sm text-muted-foreground">Farmer</div>
+                    <div className="mt-2 text-lg font-semibold">{form.personal.fullName || 'Unknown'}</div>
+                  </div>
+
+                  <div className="col-span-1 rounded-lg border border-border bg-card p-4">
+                    <div className="text-sm text-muted-foreground">Loan Requested</div>
+                    <div className="mt-2 text-lg font-semibold">{form.personal.loanAmount || '—'}</div>
+                    {form.personal.loanPurpose ? <div className="mt-1 text-sm text-muted-foreground">{form.personal.loanPurpose}</div> : null}
+                  </div>
+
+                  <div className="col-span-1 rounded-lg border border-border bg-card p-4">
+                    <div className="text-sm text-muted-foreground">Finance Readiness</div>
+                    <div className="mt-2 text-2xl font-bold text-foreground">{computeFinanceReadiness(form)}%</div>
+                    <div className="mt-1 text-sm text-muted-foreground">Higher means better repayment capacity</div>
+                  </div>
+
+                  <div className="col-span-1 rounded-lg border border-border bg-card p-4">
+                    <div className="text-sm text-muted-foreground">Recommendation</div>
+                    <div className="mt-2 text-lg font-semibold">{deriveRecommendation(computeFinanceReadiness(form))}</div>
+                    <div className="mt-1 text-sm text-muted-foreground">Based on a mock scoring heuristic</div>
+                  </div>
+
+                  <div className="col-span-1 rounded-lg border border-border bg-card p-4">
+                    <div className="text-sm text-muted-foreground">Confidence</div>
+                    <div className="mt-2 text-2xl font-bold text-foreground">{deriveConfidence(computeFinanceReadiness(form))}%</div>
+                    <div className="mt-1 text-sm text-muted-foreground">Model confidence (mock)</div>
                   </div>
                 </div>
 
-                <div className="rounded-md border border-border bg-card p-4">
-                  <div className="text-sm font-medium">Suggested Recommendation</div>
-                  <div className="mt-2">Conditional approval — recommended monitoring and climate adaptation support.</div>
+                {/* Detailed results */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="rounded-md border border-border bg-card p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm font-medium">Resilience Score</div>
+                        <div className="text-2xl font-semibold">{Math.round((computeFinanceReadiness(form) * 0.9) + 10)} / 100</div>
+                      </div>
+                      <div className="text-sm text-muted-foreground">Confidence: {deriveConfidence(computeFinanceReadiness(form))}%</div>
+                    </div>
+                    <div className="mt-3 text-sm text-muted-foreground">This score is a mocked indicator combining finance and climate practice signals.</div>
+                  </div>
+
+                  <div className="rounded-md border border-border bg-card p-4">
+                    <div className="text-sm font-medium">Suggested Recommendation</div>
+                    <div className="mt-2">{deriveRecommendation(computeFinanceReadiness(form))} — {deriveConfidence(computeFinanceReadiness(form)) > 75 ? 'Proceed with standard terms' : 'Consider conditional loan with monitoring and capacity support.'}</div>
+                    <div className="mt-3 text-sm text-muted-foreground">Notes: This is a frontend-only mock. For production, replace with model output from the AI service.</div>
+                  </div>
                 </div>
               </div>
             </FormCard>
