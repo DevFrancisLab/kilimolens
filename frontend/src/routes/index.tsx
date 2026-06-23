@@ -1,9 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import heroImg from "@/assets/hero-satellite.jpg";
 import dashImg from "@/assets/dashboard-mock.jpg";
-import * as lucidePkg from "lucide-react";
-const lucide = (lucidePkg as any).default ?? lucidePkg;
-const {
+import {
   ArrowRight,
   Satellite,
   Brain,
@@ -23,7 +21,7 @@ const {
   Twitter,
   Linkedin,
   Github,
-} = lucide;
+} from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -78,7 +76,7 @@ function Navbar() {
             ))}
           </nav>
           <a
-            href="#cta"
+            href="/dashboard"
             className="inline-flex items-center gap-1.5 rounded-lg gradient-brand px-4 py-2 text-sm font-semibold text-primary-foreground shadow-card transition-transform hover:-translate-y-0.5 hover:shadow-elevated"
           >
             Get started <ArrowRight className="h-3.5 w-3.5" />
@@ -114,7 +112,7 @@ function Hero() {
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <a
-              href="#cta"
+              href="/dashboard"
               className="group inline-flex items-center gap-2 rounded-xl gradient-brand px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-elevated transition-all hover:-translate-y-0.5"
             >
               Get started

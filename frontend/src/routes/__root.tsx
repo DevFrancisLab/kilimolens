@@ -95,8 +95,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   }),
   shellComponent: RootShell,
   component: RootComponent,
-  // Note: server-only middleware removed from the client bundle to avoid
-  // bundling server runtime APIs (AsyncLocalStorage) into the browser.
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
