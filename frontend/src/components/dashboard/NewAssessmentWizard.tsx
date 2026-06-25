@@ -1004,7 +1004,6 @@ export default function NewAssessmentWizard() {
                   ))}
                 </div>
               </div>
-            </div>
 
               {/* Explainable AI premium assistant card */}
               <div className="mt-6">
@@ -1189,6 +1188,7 @@ export default function NewAssessmentWizard() {
                     </table>
                   </div>
                 </div>
+              </div>
           )}
         </CardContent>
 
