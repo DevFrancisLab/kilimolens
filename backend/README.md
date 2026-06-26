@@ -21,10 +21,23 @@ Implements the architecture from the challenge brief:
 | ML model | XGBoost + SHAP | `app/ml/` |
 | Explainable AI | LangChain + Featherless AI | `app/explain/explainer.py` |
 
+### Neo4j is the system of record
+When `NEO4J_*` is configured, Neo4j is the **primary data layer**, not just a
+graph visualisation:
+- Every farmer, cooperative, SACCO, county, crop **and assessment** is written to
+  Neo4j as nodes + relationships.
+- The dashboard's lists, detail views and KPIs (Applications, AI Assessments,
+  Farmer Profiles, Overview `/stats`) are served by **Cypher queries** against
+  Neo4j — responses carry `"source": "neo4j"`.
+- The credit model's **graph features** (cooperative network strength, peer
+  repayment) come from real graph traversal — farmers in the same cooperative are
+  genuinely linked, and that structure feeds the score.
+
 ### Designed to degrade gracefully
 Every external dependency is optional so the API always returns a full result:
-- **No Neo4j?** Graph features (cooperative network strength, peer repayment) are
-  derived from the form instead (`graphFeatures.source = "derived"`).
+- **No Neo4j?** A local SQLite mirror serves the dashboard and graph features are
+  derived from the form (`source = "store"` / `"derived"`). SQLite is always kept
+  in sync as an offline fallback so a paused Aura instance never blanks the demo.
 - **No Featherless key?** A deterministic template produces the explanation
   (`explanation.source = "fallback"`).
 - **No trained model file?** A transparent weighted heuristic is used.

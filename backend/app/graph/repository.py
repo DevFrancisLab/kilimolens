@@ -19,6 +19,7 @@ peerRepaymentScore         : average repayment standing of co-op peers / guarant
 from __future__ import annotations
 
 import hashlib
+import json
 from typing import Any, Optional
 
 from app.graph.client import GraphClient
@@ -99,24 +100,182 @@ class GraphRepository:
             )
         return fid
 
-    def record_assessment(self, fid: str, result: dict[str, Any]) -> None:
+    def record_assessment(
+        self,
+        fid: str,
+        result: dict[str, Any],
+        meta: dict[str, Any],
+        payload: dict[str, Any],
+    ) -> None:
+        """Persist a full Assessment node in Neo4j (the system of record).
+
+        `meta` carries the shared id/createdAt/status so Neo4j and the SQLite
+        fallback agree on identity. The complete request/result are stored as
+        JSON so detail views can be served straight from the graph.
+        """
         if not self.enabled:
             return
+        personal = payload.get("personal", {}) or {}
+        farm = payload.get("farm", {}) or {}
         self.client.run(
             """
             MATCH (f:Farmer {id:$id})
             CREATE (a:Assessment {
-              date: timestamp(), readiness: $readiness,
-              confidence: $confidence, recommendation: $rec, modelVersion: $ver
+              id: $aid, createdAt: $createdAt, date: timestamp(),
+              farmerName: $name, county: $county, phone: $phone,
+              loanAmount: $loan, purpose: $purpose,
+              readiness: $readiness, confidence: $confidence,
+              recommendation: $rec, status: $status, modelVersion: $ver,
+              requestJson: $reqJson, resultJson: $resJson
             })
             MERGE (f)-[:HAS_ASSESSMENT]->(a)
             """,
             id=fid,
+            aid=meta["id"],
+            createdAt=meta["createdAt"],
+            name=personal.get("fullName") or "Unknown Farmer",
+            county=(personal.get("county") or farm.get("county") or "").strip(),
+            phone=personal.get("phone") or "",
+            loan=_to_float(personal.get("loanAmountRequested")),
+            purpose=personal.get("purposeOfLoan") or "",
             readiness=result["creditReadinessScore"],
             confidence=result["confidenceScore"],
             rec=result["recommendation"],
+            status=meta["status"],
             ver=result["modelVersion"],
+            reqJson=json.dumps(payload),
+            resJson=json.dumps(result),
         )
+
+    # ── dashboard reads (Neo4j as system of record) ─────────────────────────
+    @staticmethod
+    def _summary_from_node(a: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "id": a.get("id"),
+            "farmerId": a.get("farmerId"),
+            "farmerName": a.get("farmerName"),
+            "phone": a.get("phone", ""),
+            "county": a.get("county", ""),
+            "loanAmount": a.get("loanAmount", 0) or 0,
+            "purpose": a.get("purpose", ""),
+            "readiness": a.get("readiness", 0),
+            "confidence": a.get("confidence", 0),
+            "recommendation": a.get("recommendation", ""),
+            "status": a.get("status", ""),
+            "createdAt": a.get("createdAt", ""),
+        }
+
+    def list_assessments(self, limit: int = 100) -> list[dict[str, Any]]:
+        rows = self.client.run(
+            """
+            MATCH (f:Farmer)-[:HAS_ASSESSMENT]->(a:Assessment)
+            RETURN a{.*, farmerId: f.id} AS a
+            ORDER BY a.createdAt DESC LIMIT $limit
+            """,
+            limit=limit,
+        )
+        return [self._summary_from_node(r["a"]) for r in rows]
+
+    def get_assessment(self, assessment_id: str) -> Optional[dict[str, Any]]:
+        rows = self.client.run(
+            """
+            MATCH (f:Farmer)-[:HAS_ASSESSMENT]->(a:Assessment {id:$aid})
+            RETURN a{.*, farmerId: f.id} AS a LIMIT 1
+            """,
+            aid=assessment_id,
+        )
+        if not rows:
+            return None
+        a = rows[0]["a"]
+        summary = self._summary_from_node(a)
+        summary["result"] = json.loads(a.get("resultJson") or "{}")
+        summary["request"] = json.loads(a.get("requestJson") or "{}")
+        return summary
+
+    def list_farmers(self) -> list[dict[str, Any]]:
+        rows = self.client.run(
+            """
+            MATCH (f:Farmer)-[:HAS_ASSESSMENT]->(a:Assessment)
+            WITH f, a ORDER BY a.createdAt DESC
+            WITH f, collect(a) AS assessments
+            WITH f, assessments[0] AS latest, size(assessments) AS n
+            RETURN latest{.*, farmerId: f.id} AS a, n
+            ORDER BY latest.createdAt DESC
+            """
+        )
+        out = []
+        for r in rows:
+            s = self._summary_from_node(r["a"])
+            s["assessmentCount"] = r["n"]
+            out.append(s)
+        return out
+
+    def get_farmer(self, fid: str) -> Optional[dict[str, Any]]:
+        rows = self.client.run(
+            """
+            MATCH (f:Farmer {id:$id})-[:HAS_ASSESSMENT]->(a:Assessment)
+            RETURN a{.*, farmerId: f.id} AS a ORDER BY a.createdAt DESC
+            """,
+            id=fid,
+        )
+        if not rows:
+            return None
+        nodes = [r["a"] for r in rows]
+        latest = nodes[0]
+        return {
+            "farmerId": fid,
+            "profile": json.loads(latest.get("requestJson") or "{}"),
+            "latest": json.loads(latest.get("resultJson") or "{}"),
+            "summary": self._summary_from_node(latest),
+            "history": [
+                {
+                    "id": a.get("id"),
+                    "createdAt": a.get("createdAt"),
+                    "readiness": a.get("readiness"),
+                    "confidence": a.get("confidence"),
+                    "recommendation": a.get("recommendation"),
+                    "status": a.get("status"),
+                }
+                for a in nodes
+            ],
+        }
+
+    def stats(self) -> dict[str, Any]:
+        agg = self.client.run(
+            """
+            MATCH (a:Assessment)
+            RETURN count(a) AS total,
+                   avg(a.readiness) AS avgR, avg(a.confidence) AS avgC,
+                   sum(CASE WHEN a.status='Approved' THEN 1 ELSE 0 END) AS approved,
+                   sum(CASE WHEN a.status='Under Review' THEN 1 ELSE 0 END) AS pending,
+                   sum(CASE WHEN a.status='Declined' THEN 1 ELSE 0 END) AS declined,
+                   sum(CASE WHEN a.status='Approved' THEN a.loanAmount ELSE 0 END) AS approvedValue
+            """
+        )
+        farmers = self.client.run("MATCH (f:Farmer) RETURN count(f) AS n")
+        by_county = self.client.run(
+            """
+            MATCH (a:Assessment)
+            WITH coalesce(a.county,'') AS county, count(a) AS n
+            RETURN CASE WHEN county='' THEN 'Unknown' ELSE county END AS county, n
+            ORDER BY n DESC LIMIT 8
+            """
+        )
+        r = agg[0] if agg else {}
+        total = r.get("total", 0) or 0
+        approved = r.get("approved", 0) or 0
+        return {
+            "totalAssessments": total,
+            "totalFarmers": (farmers[0]["n"] if farmers else 0),
+            "pending": r.get("pending", 0) or 0,
+            "approved": approved,
+            "declined": r.get("declined", 0) or 0,
+            "approvalRate": round(approved / total * 100, 1) if total else 0,
+            "avgReadiness": round(r.get("avgR") or 0),
+            "avgConfidence": round(r.get("avgC") or 0),
+            "approvedLoanValue": round(r.get("approvedValue") or 0),
+            "byCounty": [{"county": x["county"], "count": x["n"]} for x in by_county],
+        }
 
     # ── feature derivation ─────────────────────────────────────────────────
     def graph_features(self, fid: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -191,12 +350,14 @@ class GraphRepository:
         rows = self.client.run(
             """
             MATCH (f:Farmer {id:$id})-[r]->(n)
-            RETURN f.id AS source, type(r) AS rel, labels(n)[0] AS label,
-                   coalesce(n.name, n.id) AS target
+            WHERE NOT n:Assessment
+            RETURN f.id AS source, f.name AS farmerName, type(r) AS rel,
+                   labels(n)[0] AS label, coalesce(n.name, n.id) AS target
             """,
             id=fid,
         )
-        nodes = {fid: {"id": fid, "label": "Farmer"}}
+        farmer_name = rows[0]["farmerName"] if rows else "Farmer"
+        nodes = {fid: {"id": fid, "label": "Farmer", "name": farmer_name}}
         edges = []
         for row in rows:
             tid = f"{row['label']}:{row['target']}"

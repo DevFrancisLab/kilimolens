@@ -70,10 +70,12 @@ def assess(request: AssessmentRequest) -> AssessmentResponse:
         modelVersion=result["modelVersion"],
     )
 
-    # 5. Persist: knowledge graph (if enabled) + SQLite system of record.
+    # 5. Persist. Neo4j is the system of record when configured; SQLite always
+    #    gets a copy so the dashboard still works if Aura is paused/unreachable.
     if request.persist:
-        repo.record_assessment(fid, result)
         saved = store.save_assessment(fid, payload, response.model_dump())
+        meta = {"id": saved["id"], "createdAt": saved["createdAt"], "status": saved["status"]}
+        repo.record_assessment(fid, result, meta, payload)
         response.assessmentId = saved["id"]
         response.createdAt = saved["createdAt"]
         response.status = saved["status"]
@@ -82,14 +84,21 @@ def assess(request: AssessmentRequest) -> AssessmentResponse:
 
 
 # ── Dashboard data endpoints ─────────────────────────────────────────────────
+# Reads prefer Neo4j (system of record); SQLite is the offline fallback.
 @router.get("/assessments")
 def assessments(limit: int = Query(100, ge=1, le=500)) -> dict:
-    return {"items": store.list_assessments(limit)}
+    repo = GraphRepository()
+    if repo.enabled:
+        return {"items": repo.list_assessments(limit), "source": "neo4j"}
+    return {"items": store.list_assessments(limit), "source": "store"}
 
 
 @router.get("/assessments/{assessment_id}")
 def assessment_detail(assessment_id: str) -> dict:
-    item = store.get_assessment(assessment_id)
+    repo = GraphRepository()
+    item = repo.get_assessment(assessment_id) if repo.enabled else None
+    if item is None:
+        item = store.get_assessment(assessment_id)
     if not item:
         raise HTTPException(status_code=404, detail="Assessment not found")
     return item
@@ -97,12 +106,18 @@ def assessment_detail(assessment_id: str) -> dict:
 
 @router.get("/farmers")
 def farmers() -> dict:
-    return {"items": store.list_farmers()}
+    repo = GraphRepository()
+    if repo.enabled:
+        return {"items": repo.list_farmers(), "source": "neo4j"}
+    return {"items": store.list_farmers(), "source": "store"}
 
 
 @router.get("/farmers/{farmer_id}")
 def farmer_detail(farmer_id: str) -> dict:
-    item = store.get_farmer(farmer_id)
+    repo = GraphRepository()
+    item = repo.get_farmer(farmer_id) if repo.enabled else None
+    if item is None:
+        item = store.get_farmer(farmer_id)
     if not item:
         raise HTTPException(status_code=404, detail="Farmer not found")
     return item
@@ -121,6 +136,9 @@ def farmer_graph(farmer_id: str) -> dict:
 
 @router.get("/stats")
 def dashboard_stats() -> dict:
+    repo = GraphRepository()
+    if repo.enabled:
+        return repo.stats()
     return store.stats()
 
 
