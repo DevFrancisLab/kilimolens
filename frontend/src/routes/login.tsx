@@ -30,9 +30,21 @@ function LoginPage() {
     }
   }
 
-  function useDemo(demoEmail: string, demoPassword: string) {
+  function fillDemo(demoEmail: string, demoPassword: string) {
     setEmail(demoEmail);
     setPassword(demoPassword);
+  }
+
+  // One-click demo sign-in: fill the fields AND log straight in.
+  async function loginAsDemo(demoEmail: string, demoPassword: string) {
+    setEmail(demoEmail);
+    setPassword(demoPassword);
+    setError("");
+    setSubmitting(true);
+    const ok = await login(demoEmail, demoPassword);
+    setSubmitting(false);
+    if (ok) navigate({ to: "/dashboard" });
+    else setError("Could not sign in with the demo account.");
   }
 
   return (
@@ -134,15 +146,28 @@ function LoginPage() {
                 { label: "Analyst", email: "eliot@kilimolens.test", password: "password" },
                 { label: "Admin", email: "admin@kilimolens.test", password: "admin" },
               ].map((d) => (
-                <button
+                <div
                   key={d.email}
-                  type="button"
-                  onClick={() => useDemo(d.email, d.password)}
-                  className="flex w-full items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-left text-sm transition hover:border-primary/40"
+                  className="flex w-full items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm"
                 >
-                  <span className="font-medium text-foreground">{d.label}</span>
-                  <span className="text-xs text-muted-foreground">{d.email}</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => fillDemo(d.email, d.password)}
+                    className="flex flex-1 items-center justify-between gap-2 text-left transition hover:opacity-80"
+                    title="Fill the form with these credentials"
+                  >
+                    <span className="font-medium text-foreground">{d.label}</span>
+                    <span className="text-xs text-muted-foreground">{d.email}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => loginAsDemo(d.email, d.password)}
+                    disabled={submitting}
+                    className="shrink-0 rounded-md gradient-brand px-2.5 py-1 text-xs font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+                  >
+                    Sign in
+                  </button>
+                </div>
               ))}
             </div>
           </div>
