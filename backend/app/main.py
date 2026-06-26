@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app import store
 from app.api.routes import router
 from app.config import get_settings
 from app.graph.client import GraphClient
@@ -14,7 +15,8 @@ from app.ml.scorer import CreditScorer
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Warm singletons so the first request isn't slow.
+    # Warm singletons so the first request isn't slow, and ensure the DB exists.
+    store.init_db()
     CreditScorer.instance()
     GraphClient.instance()
     yield

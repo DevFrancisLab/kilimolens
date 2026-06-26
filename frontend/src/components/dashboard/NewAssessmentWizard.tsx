@@ -1151,8 +1151,8 @@ export default function NewAssessmentWizard() {
                       <CloudRain className="h-6 w-6 text-sky-500" />
                       <div>
                         <div className="text-sm font-medium">Rainfall</div>
-                        <div className="mt-1 text-lg font-semibold">{Math.round(300 + Math.random() * 200)} mm / yr</div>
-                        <div className="text-xs text-muted-foreground mt-1">Average annual rainfall (mock)</div>
+                        <div className="mt-1 text-lg font-semibold">{apiResult ? apiResult.climate.rainfallMmYr : Math.round(300 + Math.random() * 200)} mm / yr</div>
+                        <div className="text-xs text-muted-foreground mt-1">Average annual rainfall {apiResult ? `(${apiResult.climate.source})` : '(mock)'}</div>
                       </div>
                     </div>
                   </div>
@@ -1163,8 +1163,8 @@ export default function NewAssessmentWizard() {
                       <FileBarChart className="h-6 w-6 text-amber-500" />
                       <div>
                         <div className="text-sm font-medium">Flood Risk</div>
-                        <div className="mt-1 text-lg font-semibold">{['Low','Moderate','High'][Math.floor(Math.random()*3)]}</div>
-                        <div className="text-xs text-muted-foreground mt-1">Local flood likelihood based on topography (mock)</div>
+                        <div className="mt-1 text-lg font-semibold">{apiResult ? apiResult.climate.floodRisk : ['Low','Moderate','High'][Math.floor(Math.random()*3)]}</div>
+                        <div className="text-xs text-muted-foreground mt-1">From peak daily rainfall {apiResult ? '' : '(mock)'}</div>
                       </div>
                     </div>
                   </div>
@@ -1175,8 +1175,8 @@ export default function NewAssessmentWizard() {
                       <Activity className="h-6 w-6 text-rose-500" />
                       <div>
                         <div className="text-sm font-medium">Drought Risk</div>
-                        <div className="mt-1 text-lg font-semibold">{Math.round(20 + Math.random()*70)}%</div>
-                        <div className="text-xs text-muted-foreground mt-1">Estimated drought probability (mock)</div>
+                        <div className="mt-1 text-lg font-semibold">{apiResult ? apiResult.climate.droughtRiskPct : Math.round(20 + Math.random()*70)}%</div>
+                        <div className="text-xs text-muted-foreground mt-1">vs 5-yr rainfall baseline {apiResult ? '' : '(mock)'}</div>
                       </div>
                     </div>
                   </div>
@@ -1186,9 +1186,9 @@ export default function NewAssessmentWizard() {
                     <div className="flex items-start gap-3">
                       <Sprout className="h-6 w-6 text-green-500" />
                       <div>
-                        <div className="text-sm font-medium">NDVI</div>
-                        <div className="mt-1 text-lg font-semibold">{(0.3 + Math.random()*0.5).toFixed(2)}</div>
-                        <div className="text-xs text-muted-foreground mt-1">Normalized Difference Vegetation Index (mock)</div>
+                        <div className="text-sm font-medium">Vegetation Index</div>
+                        <div className="mt-1 text-lg font-semibold">{apiResult ? apiResult.climate.ndviProxy.toFixed(2) : (0.3 + Math.random()*0.5).toFixed(2)}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Rainfall-based proxy {apiResult ? '' : '(mock)'}</div>
                       </div>
                     </div>
                   </div>
@@ -1199,8 +1199,8 @@ export default function NewAssessmentWizard() {
                       <Building2 className="h-6 w-6 text-orange-400" />
                       <div>
                         <div className="text-sm font-medium">Temperature Trend</div>
-                        <div className="mt-1 text-lg font-semibold">{(0.1 + Math.random()*1.2).toFixed(2)} °C/decade</div>
-                        <div className="text-xs text-muted-foreground mt-1">Recent warming trend (mock)</div>
+                        <div className="mt-1 text-lg font-semibold">{apiResult ? `${apiResult.climate.avgTempC}°C · ${apiResult.climate.tempTrendCPerDecade}` : (0.1 + Math.random()*1.2).toFixed(2)} °C/decade</div>
+                        <div className="text-xs text-muted-foreground mt-1">Avg temp &amp; warming trend {apiResult ? '' : '(mock)'}</div>
                       </div>
                     </div>
                   </div>
@@ -1211,8 +1211,8 @@ export default function NewAssessmentWizard() {
                       <Layers className="h-6 w-6 text-emerald-600" />
                       <div>
                         <div className="text-sm font-medium">Soil Suitability</div>
-                        <div className="mt-1 text-lg font-semibold">{['Poor','Fair','Good','Excellent'][Math.floor(Math.random()*4)]}</div>
-                        <div className="text-xs text-muted-foreground mt-1">Suitability for main crop (mock)</div>
+                        <div className="mt-1 text-lg font-semibold">{apiResult ? apiResult.climate.soilSuitability : ['Poor','Fair','Good','Excellent'][Math.floor(Math.random()*4)]}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Suitability for main crop {apiResult ? '' : '(mock)'}</div>
                       </div>
                     </div>
                   </div>
