@@ -11,6 +11,7 @@ export default defineConfig({
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
+    nitro: { preset: "vercel" },
   },
   vite: {
     server: {
@@ -28,8 +29,11 @@ export default defineConfig({
         "lucide-react",
         "@tanstack/react-query",
         "@tanstack/react-router",
-        "@tanstack/react-start",
       ],
+      // NOTE: do NOT add "@tanstack/react-start" here. It pulls the server-only
+      // AsyncLocalStorage (node:async_hooks) into the browser bundle, which throws
+      // "AsyncLocalStorage is not a constructor" and breaks client hydration
+      // (the page renders from SSR but no clicks/handlers work).
     },
   },
 });

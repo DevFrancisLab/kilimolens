@@ -75,12 +75,20 @@ function Navbar() {
               </a>
             ))}
           </nav>
-          <a
-            href="/dashboard"
-            className="inline-flex items-center gap-1.5 rounded-lg gradient-brand px-4 py-2 text-sm font-semibold text-primary-foreground shadow-card transition-transform hover:-translate-y-0.5 hover:shadow-elevated"
-          >
-            Get started <ArrowRight className="h-3.5 w-3.5" />
-          </a>
+          <div className="flex items-center gap-2">
+            <a
+              href="/login"
+              className="hidden rounded-lg px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:text-brand-blue sm:inline-flex"
+            >
+              Sign in
+            </a>
+            <a
+              href="/signup"
+              className="inline-flex items-center gap-1.5 rounded-lg gradient-brand px-4 py-2 text-sm font-semibold text-primary-foreground shadow-card transition-transform hover:-translate-y-0.5 hover:shadow-elevated"
+            >
+              Get started <ArrowRight className="h-3.5 w-3.5" />
+            </a>
+          </div>
         </div>
       </div>
     </header>
@@ -112,7 +120,7 @@ function Hero() {
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <a
-              href="/dashboard"
+              href="/signup"
               className="group inline-flex items-center gap-2 rounded-xl gradient-brand px-6 py-3.5 text-sm font-semibold text-primary-foreground shadow-elevated transition-all hover:-translate-y-0.5"
             >
               Get started

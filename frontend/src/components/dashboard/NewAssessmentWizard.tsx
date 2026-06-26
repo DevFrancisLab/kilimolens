@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Sprout, Layers, Activity, CloudRain, Building2, FileBarChart, Info, Users, CheckCircle2 } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { assessFarmer, type AssessmentResult } from "@/lib/api";
 
 const STEPS = [
   "Personal Information",
@@ -163,6 +164,8 @@ export default function NewAssessmentWizard() {
   const [processingProgress, setProcessingProgress] = useState<number>(0);
   const [finalDecision, setFinalDecision] = useState<string>('Further Review');
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({});
+  const [apiResult, setApiResult] = useState<AssessmentResult | null>(null);
+  const [apiError, setApiError] = useState<string>("");
 
   // Load draft if present
   useEffect(() => {
@@ -228,17 +231,18 @@ export default function NewAssessmentWizard() {
     if (step > 0) setStep((s) => s - 1);
   }
 
-  // Simple mock AI scoring based on readiness-like signals
-  const aiScore = React.useMemo(() => {
+  // Simple mock AI scoring based on readiness-like signals (local fallback when
+  // the backend is unreachable).
+  const aiScoreLocal = React.useMemo(() => {
     const readiness = Number(data.finance.averageMonthlyIncome ? 1 : 0) + (data.farm.areaHa ? 1 : 0) + (data.community.cooperative === "Yes" ? 1 : 0);
     const creditAdj = data.finance.repaymentHistory === "Good" ? 10 : data.finance.repaymentHistory === "Fair" ? 0 : -10;
     return Math.min(95, Math.max(20, 50 + readiness * 12 + creditAdj + (data.climate.fertilizerUse === "High" ? 5 : 0)));
   }, [data]);
 
   // Mock per-dimension scores derived from aiScore and data signals
-  const dimensionScores = React.useMemo(() => {
+  const dimensionScoresLocal = React.useMemo(() => {
     const clamp = (v: number) => Math.max(0, Math.min(100, Math.round(v)));
-    const financial = clamp(aiScore + (data.finance.savings ? 5 : 0) + (data.finance.outstandingLoans ? -5 : 0));
+    const financial = clamp(aiScoreLocal + (data.finance.savings ? 5 : 0) + (data.finance.outstandingLoans ? -5 : 0));
     const productivity = clamp(50 + (Number(data.farm.areaHa) ? Math.min(30, Number(data.farm.areaHa) * 2) : 0) + (data.farm.mainCrops ? 5 : 0));
     const resilience = clamp(40 + (data.climate.cropDiversification === 'High' ? 20 : data.climate.cropDiversification === 'Moderate' ? 10 : 0) + (data.climate.climateSmartTraining === 'Comprehensive' ? 15 : 0));
     const envRisk = clamp(70 - (data.climate.soilConservation === 'None' ? 20 : 0) - (data.climate.waterHarvesting === 'None' ? 15 : 0));
@@ -252,7 +256,25 @@ export default function NewAssessmentWizard() {
       community,
       dataConfidence,
     };
-  }, [aiScore, data]);
+  }, [aiScoreLocal, data]);
+
+  // Backend-aware display values: prefer the real model result from the API,
+  // fall back to the local mock when the backend is unreachable.
+  const usingBackend = apiResult != null;
+  const aiScore = apiResult ? apiResult.creditReadinessScore : aiScoreLocal;
+  const dimensionScores = apiResult
+    ? apiResult.dimensionScores
+    : dimensionScoresLocal;
+  const confidence = apiResult
+    ? apiResult.confidenceScore
+    : Math.min(99, Math.round(aiScore * 0.85 + 10));
+  const recommendation = apiResult
+    ? apiResult.recommendation
+    : aiScore > 75
+    ? "Approve"
+    : aiScore > 60
+    ? "Assess"
+    : "Decline";
 
   function toggleCard(key: string) {
     setExpandedCards((s) => ({ ...s, [key]: !s[key] }));
@@ -272,6 +294,20 @@ export default function NewAssessmentWizard() {
 
     setProcessing(true);
     setProcessingProgress(0);
+    setApiError("");
+    setApiResult(null);
+
+    // Kick off the real backend assessment in parallel with the animation.
+    const assessmentPromise = assessFarmer(data)
+      .then((result) => {
+        setApiResult(result);
+        return result;
+      })
+      .catch((err) => {
+        // Backend unreachable — fall back to local mock scoring.
+        setApiError(err?.message || "Backend unavailable — showing local estimate.");
+        return null;
+      });
 
     (async () => {
       for (let i = 0; i < stages.length; i++) {
@@ -289,6 +325,9 @@ export default function NewAssessmentWizard() {
           await new Promise((r) => setTimeout(r, 250));
         }
       }
+
+      // Make sure the real model result is in before showing results.
+      await assessmentPromise;
 
       // finish
       setProcessingProgress(100);
@@ -912,16 +951,23 @@ export default function NewAssessmentWizard() {
 
                 <div className="rounded-lg overflow-hidden bg-linear-to-r from-slate-700 to-slate-500 text-white p-5">
                   <div className="text-sm font-medium">Recommendation</div>
-                  <div className="mt-2 text-xl font-semibold">{aiScore > 75 ? 'Approve' : aiScore > 60 ? 'Assess' : 'Decline'}</div>
-                  <div className="mt-1 text-sm opacity-90">Confidence: {Math.min(99, Math.round(aiScore * 0.85 + 10))}%</div>
+                  <div className="mt-2 text-xl font-semibold">{recommendation}</div>
+                  <div className="mt-1 text-sm opacity-90">Confidence: {confidence}%</div>
                 </div>
+              </div>
+
+              {/* Model provenance banner */}
+              <div className={`rounded-md border px-4 py-2 text-xs ${usingBackend ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-amber-300 bg-amber-50 text-amber-800'}`}>
+                {usingBackend
+                  ? `Scored by KilimoLens graph-AI model (${apiResult?.modelVersion}) · Graph features: ${apiResult?.graphFeatures.source} · Explanation: ${apiResult?.explanation.source}`
+                  : `Showing local estimate — backend model not reachable.${apiError ? ' ' + apiError : ''}`}
               </div>
 
               {/* Secondary hero row for confidence and details (responsive) */}
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="rounded-lg border border-border bg-card p-4">
                   <div className="text-sm font-medium text-foreground">Confidence Score</div>
-                  <div className="mt-2 text-3xl font-bold text-foreground">{Math.min(99, Math.round(aiScore * 0.85 + 10))}%</div>
+                  <div className="mt-2 text-3xl font-bold text-foreground">{confidence}%</div>
                   <div className="mt-1 text-sm text-muted-foreground">Model confidence based on available data and signals.</div>
                 </div>
 
@@ -929,13 +975,27 @@ export default function NewAssessmentWizard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-sm font-medium text-foreground">Key Drivers</div>
-                      <div className="mt-2 text-sm text-muted-foreground">{`Repayment: ${data.finance.repaymentHistory || 'n/a'} · Area: ${data.farm.areaHa || 'n/a'} ha · Cooperative: ${data.community.cooperative || 'n/a'}`}</div>
+                      {apiResult ? (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {apiResult.drivers.map((d) => (
+                            <span
+                              key={d.feature}
+                              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${d.direction === 'positive' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}
+                              title={`SHAP impact ${d.impact >= 0 ? '+' : ''}${d.impact}`}
+                            >
+                              {d.direction === 'positive' ? '▲' : '▼'} {d.label}: {d.value}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="mt-2 text-sm text-muted-foreground">{`Repayment: ${data.finance.repaymentHistory || 'n/a'} · Area: ${data.farm.areaHa || 'n/a'} ha · Cooperative: ${data.community.cooperative || 'n/a'}`}</div>
+                      )}
                     </div>
                     <div>
                       <Button onClick={() => alert('Download PDF (UI-only)')}>Download report</Button>
                     </div>
                   </div>
-                  <div className="mt-4 text-sm text-muted-foreground">Explanation: The model weighs financial behaviour, land area, community participation and climate practices to estimate readiness and recommendation.</div>
+                  <div className="mt-4 text-sm text-muted-foreground">{apiResult ? apiResult.explanation.summary : 'Explanation: The model weighs financial behaviour, land area, community participation and climate practices to estimate readiness and recommendation.'}</div>
                 </div>
               </div>
 
@@ -1018,11 +1078,11 @@ export default function NewAssessmentWizard() {
                     <div className="flex items-center gap-4">
                       <div className="text-right">
                         <div className="text-sm text-slate-300">Recommendation</div>
-                        <div className="mt-1 text-2xl font-bold">{aiScore > 75 ? 'Approve' : aiScore > 60 ? 'Assess' : 'Decline'}</div>
+                        <div className="mt-1 text-2xl font-bold">{recommendation}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-sm text-slate-300">Confidence</div>
-                        <div className="mt-1 text-2xl font-bold">{Math.min(99, Math.round(aiScore * 0.85 + 10))}%</div>
+                        <div className="mt-1 text-2xl font-bold">{confidence}%</div>
                       </div>
                     </div>
                   </div>
@@ -1031,31 +1091,46 @@ export default function NewAssessmentWizard() {
                     <div className="p-4 bg-white/5 rounded">
                       <div className="text-sm font-medium text-slate-100">Strengths</div>
                       <ul className="mt-2 text-sm text-slate-200 space-y-1">
-                        <li>Consistent repayment history</li>
-                        <li>Cooperative membership</li>
-                        <li>Moderate farm area</li>
+                        {(apiResult ? apiResult.explanation.strengths : ['Consistent repayment history', 'Cooperative membership', 'Moderate farm area']).map((s, i) => (
+                          <li key={i}>{s}</li>
+                        ))}
                       </ul>
                     </div>
 
                     <div className="p-4 bg-white/5 rounded">
                       <div className="text-sm font-medium text-slate-100">Risks</div>
                       <ul className="mt-2 text-sm text-slate-200 space-y-1">
-                        <li>Low diversification in some crops</li>
-                        <li>Limited water harvesting infrastructure</li>
-                        <li>Outstanding informal debts</li>
+                        {(apiResult ? apiResult.explanation.risks : ['Low diversification in some crops', 'Limited water harvesting infrastructure', 'Outstanding informal debts']).map((r, i) => (
+                          <li key={i}>{r}</li>
+                        ))}
                       </ul>
                     </div>
 
                     <div className="p-4 bg-white/5 rounded">
-                      <div className="text-sm font-medium text-slate-100">Key Factors</div>
-                      <div className="mt-2 text-sm text-slate-200">
-                        <div>Repayment history: {data.finance.repaymentHistory || 'n/a'}</div>
-                        <div>Area: {data.farm.areaHa || 'n/a'} ha</div>
-                        <div>Cooperative: {data.community.cooperative || 'n/a'}</div>
-                        <div>Crop diversification: {data.climate.cropDiversification || 'n/a'}</div>
-                      </div>
+                      <div className="text-sm font-medium text-slate-100">{apiResult ? 'Next Steps for Farmer' : 'Key Factors'}</div>
+                      {apiResult ? (
+                        <ul className="mt-2 text-sm text-slate-200 space-y-1 list-disc list-inside">
+                          {apiResult.explanation.nextSteps.map((n, i) => (
+                            <li key={i}>{n}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="mt-2 text-sm text-slate-200">
+                          <div>Repayment history: {data.finance.repaymentHistory || 'n/a'}</div>
+                          <div>Area: {data.farm.areaHa || 'n/a'} ha</div>
+                          <div>Cooperative: {data.community.cooperative || 'n/a'}</div>
+                          <div>Crop diversification: {data.climate.cropDiversification || 'n/a'}</div>
+                        </div>
+                      )}
                     </div>
                   </div>
+
+                  {apiResult && (
+                    <div className="mt-6 rounded bg-white/10 p-4">
+                      <div className="text-xs uppercase tracking-wider text-slate-300">Plain-language message for the farmer (SMS/USSD)</div>
+                      <div className="mt-1 text-sm text-slate-100">{apiResult.explanation.farmerMessage}</div>
+                    </div>
+                  )}
 
                   <div className="mt-6 flex items-center justify-between">
                     <div className="text-sm text-slate-200">Explanation: The recommendation balances creditworthiness with climate and community signals. Use this as guidance — final decision requires human review.</div>
