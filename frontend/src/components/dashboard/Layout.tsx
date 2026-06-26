@@ -7,22 +7,17 @@ import {
   Sidebar,
   SidebarHeader,
   SidebarContent as SIDEBAR_CONTENT,
-  SidebarFooter,
   SidebarInset,
   SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
   SidebarTrigger,
-  SidebarSeparator,
 } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import TopNav from "./TopNav";
 import SidebarItems from "./SidebarItems";
 import { useAuth } from "@/lib/auth";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [mounted, setMounted] = useState(false);
@@ -76,33 +71,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <SidebarItems />
               </SidebarMenu>
             </SIDEBAR_CONTENT>
-
-            <SidebarSeparator />
-            <SidebarFooter>
-              <div className="flex items-center gap-2 px-2">
-                <Avatar>
-                  <AvatarImage src="/assets/avatar.jpg" alt="Profile" />
-                  <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <div className="hidden flex-1 flex-col truncate md:flex">
-                  <span className="text-sm font-medium text-foreground">{user.name}</span>
-                  <span className="text-xs text-muted-foreground">{user.organization}</span>
-                </div>
-              </div>
-              <div className="mt-3 px-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => {
-                    logout();
-                    navigate({ to: "/login" });
-                  }}
-                >
-                  Log out
-                </Button>
-              </div>
-            </SidebarFooter>
           </div>
         </Sidebar>
 
