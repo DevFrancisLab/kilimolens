@@ -17,93 +17,53 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarMenuBadge,
-  SidebarMenuSubButton,
 } from "@/components/ui/sidebar";
+import { useAuth, type AuthRole } from "@/lib/auth";
+
+type NavItem = {
+  to: string;
+  label: string;
+  icon: typeof Grid;
+  badge?: string;
+  roles: AuthRole[];
+};
+
+// Each item declares which roles may see it, so different users get different menus.
+const ALL: AuthRole[] = ["loan_officer", "analyst", "admin"];
+
+const NAV: NavItem[] = [
+  { to: "/dashboard", label: "Dashboard", icon: Grid, roles: ALL },
+  { to: "/dashboard/new-assessment", label: "New Assessment", icon: PlusSquare, roles: ["loan_officer", "admin"] },
+  { to: "/dashboard/applications", label: "Applications", icon: FileText, badge: "8", roles: ["loan_officer", "admin"] },
+  { to: "/dashboard/farmer-profiles", label: "Farmer Profiles", icon: Users, roles: ALL },
+  { to: "/dashboard/ai-assessments", label: "AI Assessments", icon: Cpu, roles: ALL },
+  { to: "/dashboard/knowledge-graph", label: "Knowledge Graph", icon: Share2, roles: ["analyst", "admin"] },
+  { to: "/dashboard/climate-insights", label: "Climate Insights", icon: CloudRain, roles: ["analyst", "admin"] },
+  { to: "/dashboard/reports", label: "Reports", icon: FileChartLine, roles: ["analyst", "admin"] },
+  { to: "/dashboard/settings", label: "Settings", icon: Settings, roles: ["admin"] },
+];
 
 export default function SidebarItems() {
+  const { user } = useAuth();
+  const role = user?.role;
+  const items = role ? NAV.filter((item) => item.roles.includes(role)) : [];
+
   return (
     <>
-      <SidebarMenuItem>
-        <SidebarMenuButton asChild>
-          <Link to="/dashboard" className="flex items-center gap-2">
-            <Grid className="h-4 w-4" />
-            <span>Dashboard</span>
-          </Link>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-
-      <SidebarMenuItem>
-        <SidebarMenuButton asChild>
-          <Link to="/dashboard/new-assessment" className="flex items-center gap-2">
-            <PlusSquare className="h-4 w-4" />
-            <span>New Assessment</span>
-          </Link>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-
-      <SidebarMenuItem>
-        <SidebarMenuButton asChild>
-          <Link to="/dashboard/applications" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            <span>Applications</span>
-            <SidebarMenuBadge>8</SidebarMenuBadge>
-          </Link>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-
-      <SidebarMenuItem>
-        <SidebarMenuButton asChild>
-          <Link to="/dashboard/farmer-profiles" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <span>Farmer Profiles</span>
-          </Link>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-
-      <SidebarMenuItem>
-        <SidebarMenuButton asChild>
-          <Link to="/dashboard/ai-assessments" className="flex items-center gap-2">
-            <Cpu className="h-4 w-4" />
-            <span>AI Assessments</span>
-          </Link>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-
-      <SidebarMenuItem>
-        <SidebarMenuButton asChild>
-          <Link to="/dashboard/knowledge-graph" className="flex items-center gap-2">
-            <Share2 className="h-4 w-4" />
-            <span>Knowledge Graph</span>
-          </Link>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-
-      <SidebarMenuItem>
-        <SidebarMenuButton asChild>
-          <Link to="/dashboard/climate-insights" className="flex items-center gap-2">
-            <CloudRain className="h-4 w-4" />
-            <span>Climate Insights</span>
-          </Link>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-
-      <SidebarMenuItem>
-        <SidebarMenuButton asChild>
-          <Link to="/dashboard/reports" className="flex items-center gap-2">
-            <FileChartLine className="h-4 w-4" />
-            <span>Reports</span>
-          </Link>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-
-      <SidebarMenuItem>
-        <SidebarMenuButton asChild>
-          <Link to="/dashboard/settings" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            <span>Settings</span>
-          </Link>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
+      {items.map((item) => {
+        const Icon = item.icon;
+        return (
+          <SidebarMenuItem key={item.to}>
+            <SidebarMenuButton asChild>
+              <Link to={item.to} className="flex items-center gap-2">
+                <Icon className="h-4 w-4" />
+                <span>{item.label}</span>
+                {item.badge && <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>}
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
+      })}
     </>
   );
 }
