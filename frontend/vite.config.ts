@@ -16,5 +16,20 @@ export default defineConfig({
     server: {
       port: 5173,
     },
+    resolve: {
+      tsconfigPaths: true,
+    },
+    optimizeDeps: {
+      noDiscovery: true,
+      include: [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "lucide-react",
+        "@tanstack/react-query",
+        "@tanstack/react-router",
+        "@tanstack/react-start",
+      ],
+    },
   },
 });

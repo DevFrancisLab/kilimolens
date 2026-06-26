@@ -10,7 +10,7 @@ import {
   Cpu,
   Share2,
   CloudRain,
-  FileChart,
+  FileChartLine,
   Settings,
 } from "lucide-react";
 import {
@@ -90,7 +90,7 @@ export default function SidebarItems() {
       <SidebarMenuItem>
         <SidebarMenuButton asChild>
           <Link to="/dashboard/reports" className="flex items-center gap-2">
-            <FileChart className="h-4 w-4" />
+            <FileChartLine className="h-4 w-4" />
             <span>Reports</span>
           </Link>
         </SidebarMenuButton>
