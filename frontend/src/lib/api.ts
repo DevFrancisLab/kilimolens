@@ -33,6 +33,7 @@ export type Explanation = {
   strengths: string[];
   risks: string[];
   farmerMessage: string;
+  farmerMessageSw: string;
   nextSteps: string[];
   source: "featherless" | "fallback";
 };

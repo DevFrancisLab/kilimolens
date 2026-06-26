@@ -32,7 +32,9 @@ _USER_TEMPLATE = (
     "Top model drivers (signed impact on readiness):\n{drivers}\n\n"
     "Return JSON with keys: summary (string, 2-3 sentences for the loan officer), "
     "strengths (array of 2-4 short strings), risks (array of 2-4 short strings), "
-    "farmerMessage (string, plain language for the farmer over SMS), "
+    "farmerMessage (string, plain English for the farmer over SMS, under 320 chars), "
+    "farmerMessageSw (string, the SAME message in clear Kiswahili for the farmer over "
+    "SMS/USSD, under 320 chars), "
     "nextSteps (array of 2-4 short, concrete actions the farmer can take to improve)."
 )
 
@@ -83,6 +85,7 @@ def _llm_explanation(settings, result, graph_features, drivers) -> dict[str, Any
         "strengths": _as_list(data.get("strengths")) or _strengths(drivers),
         "risks": _as_list(data.get("risks")) or _risks(drivers),
         "farmerMessage": data.get("farmerMessage", "").strip() or _farmer_message(result, drivers),
+        "farmerMessageSw": data.get("farmerMessageSw", "").strip() or _farmer_message_sw(result, drivers),
         "nextSteps": _as_list(data.get("nextSteps")) or _next_steps(drivers),
         "source": "featherless",
     }
@@ -106,6 +109,7 @@ def _fallback_explanation(result, graph_features, drivers) -> dict[str, Any]:
         "strengths": _strengths(drivers),
         "risks": _risks(drivers),
         "farmerMessage": _farmer_message(result, drivers),
+        "farmerMessageSw": _farmer_message_sw(result, drivers),
         "nextSteps": _next_steps(drivers),
         "source": "fallback",
     }
@@ -141,6 +145,35 @@ def _farmer_message(result, drivers) -> str:
     if neg:
         msg += f"Improving your {neg} would raise your score. "
     msg += "Reply HELP for tips."
+    return msg[:320]
+
+
+# Kiswahili labels for the fallback SMS (used when Featherless is off).
+_SW_LABELS = {
+    "repayment_history": "historia ya kulipa madeni",
+    "mobile_money_activity": "matumizi ya pesa za simu",
+    "savings_kes": "akiba yako",
+    "cooperative_member": "ushirika wako",
+    "coop_network_strength": "mtandao wa ushirika",
+    "peer_repayment_score": "ulipaji wa wenzako",
+    "crop_diversification": "mseto wa mazao",
+    "drought_resistant": "mazao yanayostahimili ukame",
+    "outstanding_loans_kes": "madeni yaliyobaki",
+    "water_harvesting_flag": "uvunaji wa maji",
+    "soil_conservation_flag": "uhifadhi wa udongo",
+    "climate_training": "mafunzo ya kilimo cha hali ya hewa",
+}
+
+
+def _farmer_message_sw(result, drivers) -> str:
+    pos = next((d["feature"] for d in drivers if d["direction"] == "positive"), None)
+    neg = next((d["feature"] for d in drivers if d["direction"] == "negative"), None)
+    msg = f"KilimoLens: utayari wako wa mkopo ni {result['creditReadinessScore']}/100. "
+    if pos:
+        msg += f"{_SW_LABELS.get(pos, 'jitihada zako').capitalize()} inakusaidia. "
+    if neg:
+        msg += f"Kuboresha {_SW_LABELS.get(neg, 'baadhi ya maeneo')} kutaongeza alama yako. "
+    msg += "Jibu MSAADA kupata ushauri."
     return msg[:320]
 
 

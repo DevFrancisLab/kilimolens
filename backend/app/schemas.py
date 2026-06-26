@@ -126,7 +126,8 @@ class Explanation(BaseModel):
     summary: str
     strengths: list[str]
     risks: list[str]
-    farmerMessage: str  # plain-language, SMS/USSD-friendly
+    farmerMessage: str  # plain-language English, SMS/USSD-friendly
+    farmerMessageSw: str = ""  # Kiswahili version for SMS/USSD
     nextSteps: list[str]
     source: str  # "featherless" | "fallback"
 

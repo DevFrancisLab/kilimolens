@@ -1200,7 +1200,10 @@ export default function NewAssessmentWizard() {
                   {apiResult && (
                     <div className="mt-6 rounded bg-white/10 p-4">
                       <div className="text-xs uppercase tracking-wider text-slate-300">Plain-language message for the farmer (SMS/USSD)</div>
-                      <div className="mt-1 text-sm text-slate-100">{apiResult.explanation.farmerMessage}</div>
+                      <div className="mt-1 text-sm text-slate-100"><span className="text-slate-400">EN · </span>{apiResult.explanation.farmerMessage}</div>
+                      {apiResult.explanation.farmerMessageSw && (
+                        <div className="mt-1 text-sm text-slate-100"><span className="text-slate-400">SW · </span>{apiResult.explanation.farmerMessageSw}</div>
+                      )}
                     </div>
                   )}
 
@@ -1415,7 +1418,10 @@ export default function NewAssessmentWizard() {
 
               <div className="rounded-lg bg-muted/50 p-3">
                 <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Plain-language message (SMS/USSD)</div>
-                <p className="mt-1">{apiResult.explanation.farmerMessage}</p>
+                <p className="mt-1"><span className="text-muted-foreground">EN · </span>{apiResult.explanation.farmerMessage}</p>
+                {apiResult.explanation.farmerMessageSw && (
+                  <p className="mt-1"><span className="text-muted-foreground">SW · </span>{apiResult.explanation.farmerMessageSw}</p>
+                )}
               </div>
 
               <div className="text-xs text-muted-foreground">
