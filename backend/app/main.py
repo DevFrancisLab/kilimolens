@@ -12,7 +12,7 @@ from app.config import get_settings
 from app.crud import messaging as messaging_db
 from app.graph.client import GraphClient
 from app.ml.scorer import CreditScorer
-from app.routers import sms_router, ussd_router
+from app.routers import ocr_router, sms_router, ussd_router
 
 
 @asynccontextmanager
@@ -46,6 +46,7 @@ def create_app() -> FastAPI:
     # register in the Africa's Talking dashboard); SMS callbacks under /api/sms.
     app.include_router(ussd_router)
     app.include_router(sms_router, prefix="/api")
+    app.include_router(ocr_router, prefix="/api")
 
     @app.get("/")
     def root() -> dict:
