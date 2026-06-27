@@ -1,15 +1,16 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Search } from "lucide-react";
+import { Loader2, Search, ArrowRight } from "lucide-react";
 
 import DashboardLayout from "@/components/dashboard/Layout";
 import { Button } from "@/components/ui/button";
 import { listAssessments, type AssessmentSummary } from "@/lib/api";
 import { formatKES, formatDate, statusClasses } from "@/lib/format";
 
-const STATUSES = ["All", "Pending Site Visit", "Approved", "Under Review", "Declined"];
+const STATUSES = ["All", "Pending Assessment", "Approved", "Under Review", "Declined"];
 
 function ApplicationsPage() {
+  const navigate = useNavigate();
   const [items, setItems] = useState<AssessmentSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -42,12 +43,38 @@ function ApplicationsPage() {
     });
   }, [items, status, query]);
 
+  const pendingCount = useMemo(
+    () => items.filter((a) => a.status === "Pending Assessment").length,
+    [items],
+  );
+
+  // Clicking a row: a USSD application pending assessment opens the assessment
+  // form prefilled with the captured details; anything else opens the profile.
+  function openRow(row: AssessmentSummary) {
+    if (row.status === "Pending Assessment") {
+      navigate({ to: "/dashboard/new-assessment", search: { application: row.id } });
+    } else {
+      navigate({ to: "/dashboard/farmer-profiles", search: { id: row.farmerId } as any });
+    }
+  }
+
   return (
     <div className="mx-auto max-w-7xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-semibold text-foreground">Applications</h2>
-          <p className="mt-1 text-sm text-muted-foreground">All farmer loan applications and their lending status.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            All farmer loan applications and their lending status.
+            {pendingCount > 0 && (
+              <>
+                {" "}
+                <span className="font-medium text-indigo-600">
+                  {pendingCount} pending assessment
+                </span>{" "}
+                from USSD.
+              </>
+            )}
+          </p>
         </div>
         <Link to="/dashboard/new-assessment">
           <Button>New Assessment</Button>
@@ -64,7 +91,7 @@ function ApplicationsPage() {
             className="w-full rounded-lg border border-border bg-card py-2 pl-9 pr-3 text-sm outline-none focus:border-primary"
           />
         </div>
-        <div className="flex gap-1">
+        <div className="flex flex-wrap gap-1">
           {STATUSES.map((s) => (
             <button
               key={s}
@@ -103,52 +130,65 @@ function ApplicationsPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((row) => (
-                <tr key={row.id} className="border-t border-border hover:bg-background/40 transition-colors">
-                  <td className="px-4 py-3">
-                    <Link to="/dashboard/farmer-profiles" search={{ id: row.farmerId } as any} className="font-medium text-foreground hover:text-primary">
-                      {row.farmerName}
-                    </Link>
-                    <div className="text-xs text-muted-foreground">{row.purpose || "—"}</div>
-                  </td>
-                  <td className="px-4 py-3">{row.county || "—"}</td>
-                  <td className="px-4 py-3">{formatKES(row.loanAmount)}</td>
-                  <td className="px-4 py-3">
-                    <div className="w-32">
-                      <div className="h-2 w-full rounded-full bg-muted/30">
-                        <div style={{ width: `${row.readiness}%` }} className="h-2 rounded-full bg-primary" />
+              {filtered.map((row) => {
+                const pending = row.status === "Pending Assessment";
+                return (
+                  <tr
+                    key={row.id}
+                    onClick={() => openRow(row)}
+                    className={`cursor-pointer border-t border-border transition-colors hover:bg-background/40 ${pending ? "bg-indigo-50/40" : ""}`}
+                  >
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-foreground">
+                        {row.farmerName || (pending ? "Awaiting site visit" : "Unknown")}
                       </div>
-                      <div className="mt-1 text-xs text-muted-foreground">{row.readiness}%</div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm">{row.recommendation}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${statusClasses(row.status)}`}>
-                      {row.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{formatDate(row.createdAt)}</td>
-                  <td className="px-4 py-3">
-                    {row.status === "Pending Site Visit" ? (
-                      <Link
-                        to="/dashboard/new-assessment"
-                        search={{ application: row.id }}
-                        className="inline-flex items-center rounded-lg gradient-brand px-3 py-1.5 text-xs font-medium text-primary-foreground"
+                      <div className="text-xs text-muted-foreground">{row.purpose || "—"}</div>
+                    </td>
+                    <td className="px-4 py-3">{row.county || "—"}</td>
+                    <td className="px-4 py-3">{formatKES(row.loanAmount)}</td>
+                    <td className="px-4 py-3">
+                      {row.readiness == null ? (
+                        <span className="text-xs text-muted-foreground">Not assessed</span>
+                      ) : (
+                        <div className="w-32">
+                          <div className="h-2 w-full rounded-full bg-muted/30">
+                            <div style={{ width: `${row.readiness}%` }} className="h-2 rounded-full bg-primary" />
+                          </div>
+                          <div className="mt-1 text-xs text-muted-foreground">{row.readiness}%</div>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm">{row.recommendation || "—"}</td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${statusClasses(row.status)}`}>
+                        {row.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{formatDate(row.createdAt)}</td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openRow(row);
+                        }}
+                        className={
+                          pending
+                            ? "inline-flex items-center gap-1 rounded-lg gradient-brand px-3 py-1.5 text-xs font-medium text-primary-foreground"
+                            : "text-xs text-primary hover:underline"
+                        }
                       >
-                        Complete
-                      </Link>
-                    ) : (
-                      <Link
-                        to="/dashboard/farmer-profiles"
-                        search={{ id: row.farmerId } as any}
-                        className="text-xs text-primary hover:underline"
-                      >
-                        View
-                      </Link>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                        {pending ? (
+                          <>
+                            Assess <ArrowRight className="h-3 w-3" />
+                          </>
+                        ) : (
+                          "View"
+                        )}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

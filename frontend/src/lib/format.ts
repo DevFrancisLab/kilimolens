@@ -41,6 +41,8 @@ export function statusClasses(status: string): string {
       return "bg-rose-100 text-rose-700";
     case "Under Review":
       return "bg-amber-100 text-amber-700";
+    case "Pending Assessment":
+      return "bg-indigo-100 text-indigo-700";
     default:
       return "bg-muted text-muted-foreground";
   }

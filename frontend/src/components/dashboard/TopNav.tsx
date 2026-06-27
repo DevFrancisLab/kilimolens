@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth, getRoleLabel } from "@/lib/auth";
 import { listAssessments, type AssessmentSummary } from "@/lib/api";
-import { formatDate, statusClasses } from "@/lib/format";
+import { formatDate, formatKES, statusClasses } from "@/lib/format";
 
 const THEME_KEY = "kilimolens_theme";
 const SEEN_KEY = "kilimolens_notifications_seen";
@@ -62,10 +62,11 @@ export default function TopNav() {
   const [unseen, setUnseen] = useState(0);
   const searchRef = useRef<HTMLDivElement>(null);
 
-  // Load recent assessments once — drives both search and notifications.
+  // Load recent assessments — drives search and notifications. Polls every 30s so
+  // new applications (e.g. submitted by a farmer over USSD) surface without a refresh.
   useEffect(() => {
     let active = true;
-    (async () => {
+    async function load() {
       try {
         const items = await listAssessments(200);
         if (!active) return;
@@ -75,9 +76,12 @@ export default function TopNav() {
       } catch {
         /* backend down — leave empty */
       }
-    })();
+    }
+    load();
+    const id = setInterval(load, 30000);
     return () => {
       active = false;
+      clearInterval(id);
     };
   }, []);
 
@@ -121,6 +125,12 @@ export default function TopNav() {
     setQuery("");
     setSearchOpen(false);
     navigate({ to: "/dashboard/farmer-profiles", search: { id: farmerId } as any });
+  }
+
+  // A pending USSD application opens the assessment form prefilled with its details.
+  function goToApplication(id: string) {
+    setSearchOpen(false);
+    navigate({ to: "/dashboard/new-assessment", search: { application: id } });
   }
 
   function submitSearch(e: React.FormEvent) {
@@ -209,21 +219,31 @@ export default function TopNav() {
                 {notifications.length === 0 ? (
                   <div className="px-3 py-6 text-center text-sm text-muted-foreground">No activity yet.</div>
                 ) : (
-                  notifications.map((n) => (
-                    <DropdownMenuItem
-                      key={n.id}
-                      onClick={() => goToFarmer(n.farmerId)}
-                      className="flex flex-col items-start gap-0.5"
-                    >
-                      <div className="flex w-full items-center justify-between">
-                        <span className="font-medium">{n.farmerName}</span>
-                        <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${statusClasses(n.status)}`}>{n.status}</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        Assessed {n.readiness}% readiness · {formatDate(n.createdAt)}
-                      </span>
-                    </DropdownMenuItem>
-                  ))
+                  notifications.map((n) => {
+                    const pending = n.status === "Pending Assessment";
+                    return (
+                      <DropdownMenuItem
+                        key={n.id}
+                        onClick={() => (pending ? goToApplication(n.id) : goToFarmer(n.farmerId))}
+                        className="flex flex-col items-start gap-0.5"
+                      >
+                        <div className="flex w-full items-center justify-between">
+                          <span className="font-medium">
+                            {pending ? n.farmerName || "New loan application" : n.farmerName}
+                          </span>
+                          <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${statusClasses(n.status)}`}>
+                            {n.status}
+                          </span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {pending
+                            ? `USSD request · ${n.purpose || "financing"}${n.loanAmount ? " · " + formatKES(n.loanAmount) : ""}`
+                            : `Assessed ${n.readiness}% readiness`}{" "}
+                          · {formatDate(n.createdAt)}
+                        </span>
+                      </DropdownMenuItem>
+                    );
+                  })
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate({ to: "/dashboard/applications" })}>

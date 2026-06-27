@@ -108,7 +108,7 @@ def save_loan_application(
     categories: list[str],
     language: str,
     source: str = "USSD",
-    status: str = "Pending Site Visit",
+    status: str = "Pending Assessment",
 ) -> dict[str, Any]:
     """Create a new loan application from a low-touch channel (e.g. USSD).
 
