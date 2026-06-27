@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
     gemini_model: str = "gemini-2.5-flash"
+    gemini_embedding_model: str = "gemini-embedding-001"  # 3072-dim, for Vector+Cypher GraphRAG
 
     # Africa's Talking (USSD + SMS). Read from the environment / .env — never
     # hardcode credentials. Leave AT_API_KEY blank to run with SMS disabled
@@ -74,6 +75,15 @@ class Settings(BaseSettings):
     @property
     def gemini_enabled(self) -> bool:
         return bool(self.gemini_api_key)
+
+    @property
+    def gemini_native_base_url(self) -> str:
+        """Native Generative Language API base (for multimodal generateContent —
+        PDF/image OCR). The OpenAI-compatible base ends in `/openai`; strip it."""
+        base = self.gemini_base_url.rstrip("/")
+        if base.endswith("/openai"):
+            base = base[: -len("/openai")]
+        return base
 
 
 @lru_cache

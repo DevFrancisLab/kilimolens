@@ -12,6 +12,7 @@ import {
   CloudRain,
   FileChartLine,
   Settings,
+  Sparkles,
 } from "lucide-react";
 import {
   SidebarMenuItem,
@@ -33,6 +34,7 @@ const ALL: AuthRole[] = ["loan_officer", "analyst", "admin"];
 
 const NAV: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: Grid, roles: ALL },
+  { to: "/dashboard/assistant", label: "Ask KilimoLens", icon: Sparkles, roles: ALL },
   { to: "/dashboard/new-assessment", label: "New Assessment", icon: PlusSquare, roles: ["loan_officer", "admin"] },
   { to: "/dashboard/applications", label: "Applications", icon: FileText, badge: "8", roles: ["loan_officer", "admin"] },
   { to: "/dashboard/farmer-profiles", label: "Farmer Profiles", icon: Users, roles: ALL },

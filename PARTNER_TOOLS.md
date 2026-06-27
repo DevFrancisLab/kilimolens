@@ -18,6 +18,10 @@ it, and **how** it works in the solution — per the tech-partner bounty criteri
 - The dashboard's Applications, AI Assessments, Farmer Profiles and Overview KPIs
   are served by **Cypher queries** — API responses carry `"source": "neo4j"`.
 - The Knowledge Graph explorer page.
+- **GraphRAG "Ask KilimoLens" assistant** — a Vector + Cypher retriever: each
+  Assessment node carries a vector embedding; a question is embedded, semantically
+  matched against a Neo4j **vector index**, and the matches are enriched by graph
+  traversal (cooperative, SACCO, county, crops) before the LLM answers.
 
 **Why**
 Credit risk at the last mile is fundamentally a **network** problem. Smallholders
@@ -31,11 +35,14 @@ relationships natively, and lets us derive trust signals that a tabular DB canno
   `(:Farmer)-[:MEMBER_OF]->(:Cooperative)`, `-[:SAVES_WITH]->(:Sacco)`,
   `-[:LOCATED_IN]->(:County)`, `-[:GROWS]->(:Crop)`, `-[:HAS_ASSESSMENT]->(:Assessment)`.
 - On every `/assess`, the farmer and relationships are `MERGE`d and a full
-  `Assessment` node is written.
+  `Assessment` node is written and **embedded** into a Neo4j vector index.
 - `cooperativeNetworkStrength` / `peerRepaymentScore` are computed by traversing
   to co-members and guarantors and averaging their repayment standing — these feed
   directly into the XGBoost credit-readiness score.
-- Code: `backend/app/graph/` (`client.py`, `repository.py`).
+- GraphRAG retrieval: `db.index.vector.queryNodes(...)` for semantic search, then
+  `MATCH` traversal for connected context (the Vector + Cypher pattern from the
+  Neo4j GenAI workshop).
+- Code: `backend/app/graph/` (`client.py`, `repository.py`, `assistant.py`).
 
 ---
 

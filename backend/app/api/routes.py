@@ -10,10 +10,12 @@ SQLite store, so the whole product is backed by real data.
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
 
 from app import store
 from app.climate import get_climate, parse_coords
 from app.config import get_settings
+from app.graph import assistant
 from app.graph.repository import GraphRepository
 from app.ml.scorer import CreditScorer
 from app.schemas import AssessmentRequest, AssessmentResponse
@@ -128,3 +130,19 @@ def climate(
     if lat is None or lon is None:
         lat, lon = parse_coords(gps, county)
     return get_climate(lat, lon, county)
+
+
+# ── GraphRAG assistant (Vector + Cypher retriever over Neo4j) ────────────────
+class AskRequest(BaseModel):
+    question: str
+
+
+@router.post("/assistant/ask")
+def assistant_ask(req: AskRequest) -> dict:
+    return assistant.ask(req.question)
+
+
+@router.post("/assistant/reindex")
+def assistant_reindex() -> dict:
+    """Embed any assessments missing a vector (one-time / maintenance)."""
+    return assistant.backfill()
