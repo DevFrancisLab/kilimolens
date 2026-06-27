@@ -175,7 +175,15 @@ def save_loan_application(
             f"INSERT INTO assessments ({','.join(row)}) VALUES ({','.join('?' for _ in row)})",
             list(row.values()),
         )
-    return {"id": reference, "reference": reference, "createdAt": created, "status": status}
+    return {
+        "id": reference,
+        "reference": reference,
+        "createdAt": created,
+        "status": status,
+        # Returned so callers can mirror the same payload/result into Neo4j.
+        "requestPayload": payload,
+        "resultPayload": result,
+    }
 
 
 def update_application(

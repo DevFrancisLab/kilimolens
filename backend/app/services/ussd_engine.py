@@ -27,6 +27,7 @@ from starlette.responses import PlainTextResponse
 from app import store
 from app.config import get_settings
 from app.crud import messaging as crud
+from app.graph.repository import GraphRepository
 from app.schemas import UssdRequest
 from app.services.africas_talking import AfricasTalkingClient
 from app.utils.phone import normalize_msisdn
@@ -328,6 +329,7 @@ def _create_loan_application(
     (vanishingly rare) chance of a collision. Runs in a threadpool (blocking
     SQLite). A new application is created every time — never an update."""
     language_name = LANGUAGE_NAMES.get(lang, lang)
+    saved = None
     for _ in range(5):
         reference = _new_reference()
         try:
@@ -340,24 +342,63 @@ def _create_loan_application(
                 source="USSD",
                 status=_DEFAULT_STATUS,
             )
-            return saved["reference"]
+            break
         except sqlite3.IntegrityError:  # duplicate reference — regenerate
             continue
-    # Exhausted short references — fall back to a full-length unique reference.
-    reference = "RF-" + uuid.uuid4().hex.upper()
-    return store.save_loan_application(
-        reference=reference,
-        phone=phone,
-        amount=amount,
-        categories=categories,
-        language=language_name,
-        source="USSD",
-        status=_DEFAULT_STATUS,
-    )["reference"]
+    if saved is None:
+        # Exhausted short references — fall back to a full-length unique reference.
+        saved = store.save_loan_application(
+            reference="RF-" + uuid.uuid4().hex.upper(),
+            phone=phone,
+            amount=amount,
+            categories=categories,
+            language=language_name,
+            source="USSD",
+            status=_DEFAULT_STATUS,
+        )
+    _mirror_to_graph(saved)
+    return saved["reference"]
+
+
+def _mirror_to_graph(saved: dict) -> None:
+    """Mirror the loan application into Neo4j (the system of record) so it shows
+    in the dashboard and survives an ephemeral SQLite reset. Non-fatal — USSD
+    must never fail because the graph is unreachable."""
+    try:
+        repo = GraphRepository()
+        if not repo.enabled:
+            return
+        payload = saved["requestPayload"]
+        fid = repo.upsert_farmer(payload)
+        result = {
+            "creditReadinessScore": None,
+            "confidenceScore": None,
+            "recommendation": None,
+            "modelVersion": "",
+            **saved["resultPayload"],
+        }
+        meta = {"id": saved["reference"], "createdAt": saved["createdAt"], "status": saved["status"]}
+        repo.record_assessment(fid, result, meta, payload)
+    except Exception as exc:  # pragma: no cover - network/dep failures
+        print(f"[ussd] graph mirror failed (non-fatal): {exc}")
+
+
+def _latest_application(phone: str) -> Optional[dict]:
+    """Most recent application for a phone — Neo4j first (durable), then the
+    SQLite mirror (which may have been reset on an ephemeral host)."""
+    repo = GraphRepository()
+    if repo.enabled:
+        try:
+            app = repo.get_latest_application_by_phone(phone)
+            if app:
+                return app
+        except Exception as exc:  # pragma: no cover - network failures
+            print(f"[ussd] graph status lookup failed (non-fatal): {exc}")
+    return crud.get_latest_assessment_by_phone(phone)
 
 
 async def _check_status(req: UssdRequest, lang: str, phone: str) -> PlainTextResponse:
-    app = await run_in_threadpool(crud.get_latest_assessment_by_phone, phone)
+    app = await run_in_threadpool(_latest_application, phone)
     if not app:
         return end(t(lang, "status_none"))
     result = app.get("result") or {}
