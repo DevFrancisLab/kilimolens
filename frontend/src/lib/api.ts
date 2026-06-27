@@ -35,7 +35,7 @@ export type Explanation = {
   farmerMessage: string;
   farmerMessageSw: string;
   nextSteps: string[];
-  source: "featherless" | "fallback";
+  source: "gemini" | "fallback";
 };
 
 export type ClimateData = {
