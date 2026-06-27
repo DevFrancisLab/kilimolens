@@ -109,11 +109,25 @@ class GraphFeatures(BaseModel):
     source: str  # "neo4j" | "derived"
 
 
+class ClimateData(BaseModel):
+    rainfallMmYr: float
+    avgTempC: float
+    tempTrendCPerDecade: float
+    droughtRiskPct: int
+    floodRisk: str
+    ndviProxy: float
+    soilSuitability: str
+    latitude: float
+    longitude: float
+    source: str  # "open-meteo" | "estimated"
+
+
 class Explanation(BaseModel):
     summary: str
     strengths: list[str]
     risks: list[str]
-    farmerMessage: str  # plain-language, SMS/USSD-friendly
+    farmerMessage: str  # plain-language English, SMS/USSD-friendly
+    farmerMessageSw: str = ""  # Kiswahili version for SMS/USSD
     nextSteps: list[str]
     source: str  # "featherless" | "fallback"
 
@@ -126,5 +140,10 @@ class AssessmentResponse(BaseModel):
     dimensionScores: DimensionScores
     drivers: list[Driver]
     graphFeatures: GraphFeatures
+    climate: ClimateData
     explanation: Explanation
     modelVersion: str
+    # Set when the assessment is persisted (request.persist = true).
+    assessmentId: Optional[str] = None
+    createdAt: Optional[str] = None
+    status: Optional[str] = None

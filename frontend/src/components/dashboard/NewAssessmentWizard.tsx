@@ -14,7 +14,14 @@ import {
 } from "@/components/ui/select";
 import { Sprout, Layers, Activity, CloudRain, Building2, FileBarChart, Info, Users, CheckCircle2 } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { assessFarmer, type AssessmentResult } from "@/lib/api";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { assessFarmer, completeApplication, getAssessment, type AssessmentResult } from "@/lib/api";
 
 const STEPS = [
   "Personal Information",
@@ -46,6 +53,13 @@ type FormData = {
     county: string;
     areaHa: string;
     mainCrops: string;
+    secondaryCrops?: string;
+    livestock?: string;
+    yearsOfFarming?: string;
+    irrigation?: string;
+    previousHarvest?: string;
+    expectedHarvest?: string;
+    inputPurchases?: string;
   };
   finance: {
     previousLoans: string;
@@ -155,9 +169,32 @@ const DEFAULT: FormData = {
   },
 };
 
-export default function NewAssessmentWizard() {
+// Merge a stored application request (e.g. captured over USSD) onto the form,
+// only overriding fields that actually carry a value so the loan officer's
+// remaining fields keep their editable defaults.
+function mergePrefill(base: FormData, req: any): FormData {
+  if (!req || typeof req !== "object") return base;
+  const out: FormData = JSON.parse(JSON.stringify(base));
+  (["personal", "farm", "finance", "community", "climate"] as (keyof FormData)[]).forEach((section) => {
+    const incoming = req[section];
+    if (!incoming || typeof incoming !== "object") return;
+    Object.keys(incoming).forEach((key) => {
+      const val = incoming[key];
+      if (val !== undefined && val !== null && String(val) !== "" && key in (out[section] as any)) {
+        (out[section] as any)[key] = String(val);
+      }
+    });
+  });
+  return out;
+}
+
+type ChannelMeta = { source?: string; preferredLanguage?: string; requestedCategories?: string[] };
+
+export default function NewAssessmentWizard({ applicationId }: { applicationId?: string } = {}) {
+  const completing = Boolean(applicationId);
   const [step, setStep] = useState<number>(0);
   const [data, setData] = useState<FormData>(DEFAULT);
+  const [channelMeta, setChannelMeta] = useState<ChannelMeta | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [processing, setProcessing] = useState(false);
   const [processingStage, setProcessingStage] = useState<string>("");
@@ -166,18 +203,38 @@ export default function NewAssessmentWizard() {
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({});
   const [apiResult, setApiResult] = useState<AssessmentResult | null>(null);
   const [apiError, setApiError] = useState<string>("");
+  const [showExplanation, setShowExplanation] = useState(false);
 
-  // Load draft if present
+  // When completing a USSD-originated application, prefill from the backend.
+  // Otherwise restore any locally saved draft.
   useEffect(() => {
+    let active = true;
+    if (applicationId) {
+      (async () => {
+        try {
+          const app = await getAssessment(applicationId);
+          if (!active) return;
+          setData((d) => mergePrefill(d, app.request));
+          const ch = (app.request as any)?.channel as ChannelMeta | undefined;
+          if (ch) setChannelMeta(ch);
+        } catch (e) {
+          // Application not loadable — fall back to a blank, editable form.
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }
     try {
       const raw = localStorage.getItem("assessment_draft");
-      if (raw) {
-        setData(JSON.parse(raw));
-      }
+      if (raw) setData(JSON.parse(raw));
     } catch (e) {
       // ignore
     }
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [applicationId]);
 
   function update<K extends keyof FormData>(section: K, patch: Partial<FormData[K]>) {
     setData((d) => ({ ...d, [section]: { ...d[section], ...patch } }));
@@ -280,6 +337,70 @@ export default function NewAssessmentWizard() {
     setExpandedCards((s) => ({ ...s, [key]: !s[key] }));
   }
 
+  // Build a printable assessment report and open the browser print dialog
+  // (the user can Save as PDF). Uses the real backend result when available.
+  function downloadReport() {
+    const esc = (s: any) =>
+      String(s ?? "—").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c] as string));
+    const drivers = apiResult?.drivers ?? [];
+    const climate = apiResult?.climate;
+    const exp = apiResult?.explanation;
+    const win = window.open("", "_blank", "width=900,height=1000");
+    if (!win) {
+      alert("Please allow pop-ups to download the report.");
+      return;
+    }
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8"/>
+      <title>KilimoLens Assessment — ${esc(data.personal.fullName)}</title>
+      <style>
+        body{font-family:system-ui,Arial,sans-serif;color:#0f172a;margin:40px;line-height:1.5}
+        h1{font-size:22px;margin:0} h2{font-size:15px;margin:24px 0 8px;border-bottom:1px solid #e2e8f0;padding-bottom:4px}
+        .muted{color:#64748b;font-size:12px} .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+        .kpi{display:inline-block;margin-right:28px} .kpi .v{font-size:26px;font-weight:700}
+        table{width:100%;border-collapse:collapse;font-size:13px} td,th{text-align:left;padding:6px 4px;border-bottom:1px solid #eef2f7}
+        .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;margin:2px}
+        .pos{background:#dcfce7;color:#166534}.neg{background:#ffe4e6;color:#9f1239}
+      </style></head><body>
+      <h1>KilimoLens — Credit Readiness Report</h1>
+      <div class="muted">${esc(data.personal.fullName)} · ${esc(data.personal.county)} · Generated ${new Date().toLocaleString()}</div>
+      <h2>Decision</h2>
+      <div class="kpi"><div class="muted">Credit Readiness</div><div class="v">${aiScore}%</div></div>
+      <div class="kpi"><div class="muted">Confidence</div><div class="v">${confidence}%</div></div>
+      <div class="kpi"><div class="muted">Recommendation</div><div class="v">${esc(recommendation)}</div></div>
+      <div class="kpi"><div class="muted">Loan Requested</div><div class="v">KSh ${Number(data.personal.loanAmountRequested || 0).toLocaleString()}</div></div>
+      <h2>Why this score</h2>
+      <div>${drivers.map((d) => `<span class="tag ${d.direction === "positive" ? "pos" : "neg"}">${d.direction === "positive" ? "▲" : "▼"} ${esc(d.label)}: ${esc(d.value)}</span>`).join(" ") || "<span class='muted'>Model drivers available with backend.</span>"}</div>
+      <p>${esc(exp?.summary || "")}</p>
+      ${exp ? `<h2>Strengths</h2><ul>${exp.strengths.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>
+        <h2>Risks</h2><ul>${exp.risks.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>
+        <h2>Recommended next steps</h2><ul>${exp.nextSteps.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>` : ""}
+      ${climate ? `<h2>Climate (${esc(climate.source)})</h2>
+        <div class="grid"><div>Rainfall: ${climate.rainfallMmYr} mm/yr</div><div>Avg temp: ${climate.avgTempC} °C</div>
+        <div>Drought risk: ${climate.droughtRiskPct}%</div><div>Soil: ${esc(climate.soilSuitability)}</div></div>` : ""}
+      <h2>Profile</h2>
+      <table><tbody>
+        <tr><td>National ID</td><td>${esc(data.personal.nationalId)}</td><td>Phone</td><td>${esc(data.personal.phone)}</td></tr>
+        <tr><td>Farm area</td><td>${esc(data.farm.areaHa)} ha</td><td>Main crops</td><td>${esc(data.farm.mainCrops)}</td></tr>
+        <tr><td>Repayment</td><td>${esc(data.finance.repaymentHistory)}</td><td>Cooperative</td><td>${esc(data.community.cooperative)}</td></tr>
+      </tbody></table>
+      <p class="muted" style="margin-top:32px">Generated by KilimoLens · Model ${esc(apiResult?.modelVersion || "local estimate")}. For decision support; final lending decision requires human review.</p>
+      </body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 300);
+  }
+
+  // The assessment is already persisted by the backend during runAIProcess.
+  // Finish just clears the local draft and goes to the farmer's profile.
+  function finishAssessment() {
+    clearDraft();
+    if (apiResult?.farmerId) {
+      window.location.href = `/dashboard/farmer-profiles?id=${encodeURIComponent(apiResult.farmerId)}`;
+    } else {
+      window.location.href = "/dashboard/applications";
+    }
+  }
+
   // Runs a simulated AI processing sequence then navigates to the AI results step
   function runAIProcess() {
     const stages = [
@@ -297,8 +418,12 @@ export default function NewAssessmentWizard() {
     setApiError("");
     setApiResult(null);
 
-    // Kick off the real backend assessment in parallel with the animation.
-    const assessmentPromise = assessFarmer(data)
+    // Kick off the real backend assessment in parallel with the animation. When
+    // completing a USSD application we update that application in place (PATCH);
+    // otherwise we create a new assessment (POST).
+    const persist =
+      completing && applicationId ? completeApplication(applicationId, data) : assessFarmer(data);
+    const assessmentPromise = persist
       .then((result) => {
         setApiResult(result);
         return result;
@@ -343,9 +468,27 @@ export default function NewAssessmentWizard() {
   return (
     <div className="mx-auto max-w-4xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-foreground">New Assessment</h1>
-        <p className="text-sm text-muted-foreground">Create a new farmer assessment — step by step.</p>
+        <h1 className="text-2xl font-semibold text-foreground">
+          {completing ? "Complete Application" : "New Assessment"}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {completing
+            ? "Review the details captured over USSD and complete the rest during the site visit."
+            : "Create a new farmer assessment — step by step."}
+        </p>
       </div>
+
+      {completing && (
+        <div className="mb-6 rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">
+          Completing application <span className="font-semibold">{applicationId}</span>
+          {channelMeta?.source ? ` · submitted via ${channelMeta.source}` : ""}
+          {channelMeta?.preferredLanguage ? ` · preferred language: ${channelMeta.preferredLanguage}` : ""}
+          {channelMeta?.requestedCategories?.length
+            ? ` · requested: ${channelMeta.requestedCategories.join(", ")}`
+            : ""}
+          . Pre-filled fields below come from USSD — complete the remaining fields and save. Your entries are not overwritten.
+        </div>
+      )}
 
       {/* Stepper */}
       <div className="mb-6 overflow-auto">
@@ -992,7 +1135,7 @@ export default function NewAssessmentWizard() {
                       )}
                     </div>
                     <div>
-                      <Button onClick={() => alert('Download PDF (UI-only)')}>Download report</Button>
+                      <Button onClick={downloadReport}>Download report</Button>
                     </div>
                   </div>
                   <div className="mt-4 text-sm text-muted-foreground">{apiResult ? apiResult.explanation.summary : 'Explanation: The model weighs financial behaviour, land area, community participation and climate practices to estimate readiness and recommendation.'}</div>
@@ -1128,14 +1271,17 @@ export default function NewAssessmentWizard() {
                   {apiResult && (
                     <div className="mt-6 rounded bg-white/10 p-4">
                       <div className="text-xs uppercase tracking-wider text-slate-300">Plain-language message for the farmer (SMS/USSD)</div>
-                      <div className="mt-1 text-sm text-slate-100">{apiResult.explanation.farmerMessage}</div>
+                      <div className="mt-1 text-sm text-slate-100"><span className="text-slate-400">EN · </span>{apiResult.explanation.farmerMessage}</div>
+                      {apiResult.explanation.farmerMessageSw && (
+                        <div className="mt-1 text-sm text-slate-100"><span className="text-slate-400">SW · </span>{apiResult.explanation.farmerMessageSw}</div>
+                      )}
                     </div>
                   )}
 
                   <div className="mt-6 flex items-center justify-between">
                     <div className="text-sm text-slate-200">Explanation: The recommendation balances creditworthiness with climate and community signals. Use this as guidance — final decision requires human review.</div>
                     <div>
-                      <Button variant="ghost" onClick={() => alert('Show full explainability (UI-only)')}>View full explanation</Button>
+                      <Button variant="ghost" onClick={() => setShowExplanation(true)}>View full explanation</Button>
                     </div>
                   </div>
                 </div>
@@ -1151,8 +1297,8 @@ export default function NewAssessmentWizard() {
                       <CloudRain className="h-6 w-6 text-sky-500" />
                       <div>
                         <div className="text-sm font-medium">Rainfall</div>
-                        <div className="mt-1 text-lg font-semibold">{Math.round(300 + Math.random() * 200)} mm / yr</div>
-                        <div className="text-xs text-muted-foreground mt-1">Average annual rainfall (mock)</div>
+                        <div className="mt-1 text-lg font-semibold">{apiResult ? apiResult.climate.rainfallMmYr : Math.round(300 + Math.random() * 200)} mm / yr</div>
+                        <div className="text-xs text-muted-foreground mt-1">Average annual rainfall {apiResult ? `(${apiResult.climate.source})` : '(mock)'}</div>
                       </div>
                     </div>
                   </div>
@@ -1163,8 +1309,8 @@ export default function NewAssessmentWizard() {
                       <FileBarChart className="h-6 w-6 text-amber-500" />
                       <div>
                         <div className="text-sm font-medium">Flood Risk</div>
-                        <div className="mt-1 text-lg font-semibold">{['Low','Moderate','High'][Math.floor(Math.random()*3)]}</div>
-                        <div className="text-xs text-muted-foreground mt-1">Local flood likelihood based on topography (mock)</div>
+                        <div className="mt-1 text-lg font-semibold">{apiResult ? apiResult.climate.floodRisk : ['Low','Moderate','High'][Math.floor(Math.random()*3)]}</div>
+                        <div className="text-xs text-muted-foreground mt-1">From peak daily rainfall {apiResult ? '' : '(mock)'}</div>
                       </div>
                     </div>
                   </div>
@@ -1175,8 +1321,8 @@ export default function NewAssessmentWizard() {
                       <Activity className="h-6 w-6 text-rose-500" />
                       <div>
                         <div className="text-sm font-medium">Drought Risk</div>
-                        <div className="mt-1 text-lg font-semibold">{Math.round(20 + Math.random()*70)}%</div>
-                        <div className="text-xs text-muted-foreground mt-1">Estimated drought probability (mock)</div>
+                        <div className="mt-1 text-lg font-semibold">{apiResult ? apiResult.climate.droughtRiskPct : Math.round(20 + Math.random()*70)}%</div>
+                        <div className="text-xs text-muted-foreground mt-1">vs 5-yr rainfall baseline {apiResult ? '' : '(mock)'}</div>
                       </div>
                     </div>
                   </div>
@@ -1186,9 +1332,9 @@ export default function NewAssessmentWizard() {
                     <div className="flex items-start gap-3">
                       <Sprout className="h-6 w-6 text-green-500" />
                       <div>
-                        <div className="text-sm font-medium">NDVI</div>
-                        <div className="mt-1 text-lg font-semibold">{(0.3 + Math.random()*0.5).toFixed(2)}</div>
-                        <div className="text-xs text-muted-foreground mt-1">Normalized Difference Vegetation Index (mock)</div>
+                        <div className="text-sm font-medium">Vegetation Index</div>
+                        <div className="mt-1 text-lg font-semibold">{apiResult ? apiResult.climate.ndviProxy.toFixed(2) : (0.3 + Math.random()*0.5).toFixed(2)}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Rainfall-based proxy {apiResult ? '' : '(mock)'}</div>
                       </div>
                     </div>
                   </div>
@@ -1199,8 +1345,8 @@ export default function NewAssessmentWizard() {
                       <Building2 className="h-6 w-6 text-orange-400" />
                       <div>
                         <div className="text-sm font-medium">Temperature Trend</div>
-                        <div className="mt-1 text-lg font-semibold">{(0.1 + Math.random()*1.2).toFixed(2)} °C/decade</div>
-                        <div className="text-xs text-muted-foreground mt-1">Recent warming trend (mock)</div>
+                        <div className="mt-1 text-lg font-semibold">{apiResult ? `${apiResult.climate.avgTempC}°C · ${apiResult.climate.tempTrendCPerDecade}` : (0.1 + Math.random()*1.2).toFixed(2)} °C/decade</div>
+                        <div className="text-xs text-muted-foreground mt-1">Avg temp &amp; warming trend {apiResult ? '' : '(mock)'}</div>
                       </div>
                     </div>
                   </div>
@@ -1211,8 +1357,8 @@ export default function NewAssessmentWizard() {
                       <Layers className="h-6 w-6 text-emerald-600" />
                       <div>
                         <div className="text-sm font-medium">Soil Suitability</div>
-                        <div className="mt-1 text-lg font-semibold">{['Poor','Fair','Good','Excellent'][Math.floor(Math.random()*4)]}</div>
-                        <div className="text-xs text-muted-foreground mt-1">Suitability for main crop (mock)</div>
+                        <div className="mt-1 text-lg font-semibold">{apiResult ? apiResult.climate.soilSuitability : ['Poor','Fair','Good','Excellent'][Math.floor(Math.random()*4)]}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Suitability for main crop {apiResult ? '' : '(mock)'}</div>
                       </div>
                     </div>
                   </div>
@@ -1245,8 +1391,11 @@ export default function NewAssessmentWizard() {
                           const has = row.value && String(row.value).trim() !== '';
                           const status = has ? 'Verified' : 'Pending Verification';
                           const source = has ? (row.id === 'nationalId' ? 'Government registry' : row.id === 'gps' ? 'GPS device' : row.id === 'mobileMoney' ? 'Mobile operator' : 'Self-declared') : 'N/A';
-                          const confidence = has ? (status === 'Verified' ? 85 + Math.floor(Math.random()*10) : 40 + Math.floor(Math.random()*30)) : 20 + Math.floor(Math.random()*10);
-                          const date = new Date(Date.now() - Math.floor(Math.random()*1000*60*60*24*90)).toLocaleDateString();
+                          // Deterministic confidence per source type (no randomness).
+                          const confidence = has ? (source === 'Self-declared' ? 60 : 92) : 0;
+                          const date = has
+                            ? new Date(apiResult?.createdAt || Date.now()).toLocaleDateString()
+                            : '—';
                           return (
                             <tr key={row.id} className="border-t border-border">
                               <td className="px-4 py-3 text-sm text-foreground">{row.label}</td>
@@ -1279,13 +1428,84 @@ export default function NewAssessmentWizard() {
               {step < STEPS.length - 1 ? (
                 <Button onClick={next}>Next</Button>
               ) : (
-                <Button onClick={() => { alert("Assessment completed (UI-only)"); clearDraft(); window.location.href = "/dashboard"; }}>Finish</Button>
+                <Button onClick={finishAssessment}>Finish</Button>
               )}
             </div>
           </div>
         </CardFooter>
       </Card>
       {processing && <ProcessingOverlay stage={processingStage} progress={processingProgress} />}
+
+      <Dialog open={showExplanation} onOpenChange={setShowExplanation}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Explainable AI — full breakdown</DialogTitle>
+            <DialogDescription>
+              {apiResult
+                ? `Credit readiness ${aiScore}% · confidence ${confidence}% · recommendation ${recommendation}`
+                : "Showing the local estimate. Connect the backend for full model explainability."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {apiResult ? (
+            <div className="space-y-5 text-sm">
+              <p className="text-muted-foreground">{apiResult.explanation.summary}</p>
+
+              <div>
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Model drivers (SHAP)</div>
+                <div className="flex flex-wrap gap-2">
+                  {apiResult.drivers.map((d) => (
+                    <span
+                      key={d.feature}
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${d.direction === "positive" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}
+                    >
+                      {d.direction === "positive" ? "▲" : "▼"} {d.label}: {d.value} ({d.impact >= 0 ? "+" : ""}{d.impact})
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-emerald-700">Strengths</div>
+                  <ul className="list-inside list-disc space-y-1 text-muted-foreground">
+                    {apiResult.explanation.strengths.map((s, i) => <li key={i}>{s}</li>)}
+                  </ul>
+                </div>
+                <div>
+                  <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-rose-700">Risks</div>
+                  <ul className="list-inside list-disc space-y-1 text-muted-foreground">
+                    {apiResult.explanation.risks.map((s, i) => <li key={i}>{s}</li>)}
+                  </ul>
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recommended next steps</div>
+                <ul className="list-inside list-disc space-y-1 text-muted-foreground">
+                  {apiResult.explanation.nextSteps.map((s, i) => <li key={i}>{s}</li>)}
+                </ul>
+              </div>
+
+              <div className="rounded-lg bg-muted/50 p-3">
+                <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Plain-language message (SMS/USSD)</div>
+                <p className="mt-1"><span className="text-muted-foreground">EN · </span>{apiResult.explanation.farmerMessage}</p>
+                {apiResult.explanation.farmerMessageSw && (
+                  <p className="mt-1"><span className="text-muted-foreground">SW · </span>{apiResult.explanation.farmerMessageSw}</p>
+                )}
+              </div>
+
+              <div className="text-xs text-muted-foreground">
+                Model {apiResult.modelVersion} · graph features: {apiResult.graphFeatures.source} · explanation: {apiResult.explanation.source}
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              The backend was not reachable for this assessment, so only a local estimate is available.
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -53,6 +53,7 @@ class GraphClient:
             "CREATE CONSTRAINT sacco_name IF NOT EXISTS FOR (s:Sacco) REQUIRE s.name IS UNIQUE",
             "CREATE CONSTRAINT county_name IF NOT EXISTS FOR (c:County) REQUIRE c.name IS UNIQUE",
             "CREATE CONSTRAINT crop_name IF NOT EXISTS FOR (c:Crop) REQUIRE c.name IS UNIQUE",
+            "CREATE CONSTRAINT assessment_id IF NOT EXISTS FOR (a:Assessment) REQUIRE a.id IS UNIQUE",
         ]
         with self._driver.session(database=self.settings.neo4j_database) as session:
             for stmt in constraints:
