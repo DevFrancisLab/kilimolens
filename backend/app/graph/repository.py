@@ -192,6 +192,72 @@ class GraphRepository:
         summary["request"] = json.loads(a.get("requestJson") or "{}")
         return summary
 
+    def get_latest_application_by_phone(self, phone: str) -> Optional[dict[str, Any]]:
+        """Latest assessment/application for a phone number (matched on the last
+        9 subscriber digits). Lets the USSD status check survive an ephemeral
+        SQLite reset, since Neo4j is durable."""
+        tail = "".join(c for c in (phone or "") if c.isdigit())[-9:]
+        if not tail:
+            return None
+        rows = self.client.run(
+            """
+            MATCH (f:Farmer)-[:HAS_ASSESSMENT]->(a:Assessment)
+            WHERE replace(replace(coalesce(a.phone,''), '+', ''), ' ', '') ENDS WITH $tail
+            RETURN a{.*, farmerId: f.id} AS a
+            ORDER BY a.createdAt DESC LIMIT 1
+            """,
+            tail=tail,
+        )
+        if not rows:
+            return None
+        a = rows[0]["a"]
+        return {
+            "id": a.get("id"),
+            "status": a.get("status", ""),
+            "createdAt": a.get("createdAt", ""),
+            "result": json.loads(a.get("resultJson") or "{}"),
+        }
+
+    def update_assessment(
+        self,
+        assessment_id: str,
+        *,
+        result: dict[str, Any],
+        meta: dict[str, Any],
+        payload: dict[str, Any],
+    ) -> bool:
+        """Update an existing Assessment node in place (e.g. a loan officer
+        completing a USSD application). Returns True if a node was updated."""
+        if not self.enabled:
+            return False
+        personal = payload.get("personal", {}) or {}
+        farm = payload.get("farm", {}) or {}
+        rows = self.client.run(
+            """
+            MATCH (a:Assessment {id:$aid})
+            SET a.farmerName=$name, a.county=$county, a.phone=$phone,
+                a.loanAmount=$loan, a.purpose=$purpose,
+                a.readiness=$readiness, a.confidence=$confidence,
+                a.recommendation=$rec, a.status=$status, a.modelVersion=$ver,
+                a.requestJson=$reqJson, a.resultJson=$resJson, a.updatedAt=timestamp()
+            RETURN a.id AS id
+            """,
+            aid=assessment_id,
+            name=personal.get("fullName") or "Unknown Farmer",
+            county=(personal.get("county") or farm.get("county") or "").strip(),
+            phone=personal.get("phone") or "",
+            loan=_to_float(personal.get("loanAmountRequested")),
+            purpose=personal.get("purposeOfLoan") or "",
+            readiness=result["creditReadinessScore"],
+            confidence=result["confidenceScore"],
+            rec=result["recommendation"],
+            status=meta["status"],
+            ver=result["modelVersion"],
+            reqJson=json.dumps(payload),
+            resJson=json.dumps(result),
+        )
+        return bool(rows)
+
     def list_farmers(self) -> list[dict[str, Any]]:
         rows = self.client.run(
             """

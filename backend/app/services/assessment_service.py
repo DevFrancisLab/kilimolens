@@ -92,7 +92,12 @@ def complete_application(reference: str, request: AssessmentRequest) -> Optional
     the previously stored USSD values (only the immutable channel metadata is
     re-attached).
     """
+    repo = GraphRepository()
+    # Load the existing application. Neo4j is the system of record on a host where
+    # the SQLite mirror may have been reset, so fall back to the graph.
     existing = store.get_assessment(reference)
+    if existing is None and repo.enabled:
+        existing = repo.get_assessment(reference)
     if existing is None:
         return None
 
@@ -106,7 +111,6 @@ def complete_application(reference: str, request: AssessmentRequest) -> Optional
     payload = request.model_dump()
     payload["channel"] = channel
 
-    repo = GraphRepository()
     # Re-derive identity (the officer may now have supplied a National ID) and
     # graph features, then score on the completed data.
     fid = farmer_id(payload)
@@ -131,6 +135,16 @@ def complete_application(reference: str, request: AssessmentRequest) -> Optional
     )
 
     status = store._STATUS.get(response.recommendation, "Under Review")
+
+    # Persist in place. Neo4j is authoritative; SQLite is a best-effort mirror that
+    # may be missing the row on an ephemeral host (then graph_updated carries it).
+    graph_updated = False
+    try:
+        meta = {"id": reference, "createdAt": created_at, "status": status}
+        graph_updated = repo.update_assessment(reference, result=result_payload, meta=meta, payload=payload)
+    except Exception as exc:  # pragma: no cover - network failures
+        print(f"[complete] graph update failed (non-fatal): {exc}")
+
     saved = store.update_application(
         reference,
         request_json=json.dumps(payload),
@@ -148,12 +162,13 @@ def complete_application(reference: str, request: AssessmentRequest) -> Optional
         status=status,
         model_version=response.modelVersion,
     )
-    if saved is None:
+
+    if not graph_updated and saved is None:
         return None
 
     response.assessmentId = reference
-    response.createdAt = saved["createdAt"]
-    response.status = saved["status"]
+    response.createdAt = saved["createdAt"] if saved else created_at
+    response.status = status
     return response
 
 
