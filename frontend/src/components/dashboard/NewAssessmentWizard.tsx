@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { assessFarmer, type AssessmentResult } from "@/lib/api";
+import { assessFarmer, completeApplication, getAssessment, type AssessmentResult } from "@/lib/api";
 
 const STEPS = [
   "Personal Information",
@@ -53,6 +53,13 @@ type FormData = {
     county: string;
     areaHa: string;
     mainCrops: string;
+    secondaryCrops?: string;
+    livestock?: string;
+    yearsOfFarming?: string;
+    irrigation?: string;
+    previousHarvest?: string;
+    expectedHarvest?: string;
+    inputPurchases?: string;
   };
   finance: {
     previousLoans: string;
@@ -162,9 +169,32 @@ const DEFAULT: FormData = {
   },
 };
 
-export default function NewAssessmentWizard() {
+// Merge a stored application request (e.g. captured over USSD) onto the form,
+// only overriding fields that actually carry a value so the loan officer's
+// remaining fields keep their editable defaults.
+function mergePrefill(base: FormData, req: any): FormData {
+  if (!req || typeof req !== "object") return base;
+  const out: FormData = JSON.parse(JSON.stringify(base));
+  (["personal", "farm", "finance", "community", "climate"] as (keyof FormData)[]).forEach((section) => {
+    const incoming = req[section];
+    if (!incoming || typeof incoming !== "object") return;
+    Object.keys(incoming).forEach((key) => {
+      const val = incoming[key];
+      if (val !== undefined && val !== null && String(val) !== "" && key in (out[section] as any)) {
+        (out[section] as any)[key] = String(val);
+      }
+    });
+  });
+  return out;
+}
+
+type ChannelMeta = { source?: string; preferredLanguage?: string; requestedCategories?: string[] };
+
+export default function NewAssessmentWizard({ applicationId }: { applicationId?: string } = {}) {
+  const completing = Boolean(applicationId);
   const [step, setStep] = useState<number>(0);
   const [data, setData] = useState<FormData>(DEFAULT);
+  const [channelMeta, setChannelMeta] = useState<ChannelMeta | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [processing, setProcessing] = useState(false);
   const [processingStage, setProcessingStage] = useState<string>("");
@@ -175,17 +205,36 @@ export default function NewAssessmentWizard() {
   const [apiError, setApiError] = useState<string>("");
   const [showExplanation, setShowExplanation] = useState(false);
 
-  // Load draft if present
+  // When completing a USSD-originated application, prefill from the backend.
+  // Otherwise restore any locally saved draft.
   useEffect(() => {
+    let active = true;
+    if (applicationId) {
+      (async () => {
+        try {
+          const app = await getAssessment(applicationId);
+          if (!active) return;
+          setData((d) => mergePrefill(d, app.request));
+          const ch = (app.request as any)?.channel as ChannelMeta | undefined;
+          if (ch) setChannelMeta(ch);
+        } catch (e) {
+          // Application not loadable — fall back to a blank, editable form.
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }
     try {
       const raw = localStorage.getItem("assessment_draft");
-      if (raw) {
-        setData(JSON.parse(raw));
-      }
+      if (raw) setData(JSON.parse(raw));
     } catch (e) {
       // ignore
     }
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [applicationId]);
 
   function update<K extends keyof FormData>(section: K, patch: Partial<FormData[K]>) {
     setData((d) => ({ ...d, [section]: { ...d[section], ...patch } }));
@@ -369,8 +418,12 @@ export default function NewAssessmentWizard() {
     setApiError("");
     setApiResult(null);
 
-    // Kick off the real backend assessment in parallel with the animation.
-    const assessmentPromise = assessFarmer(data)
+    // Kick off the real backend assessment in parallel with the animation. When
+    // completing a USSD application we update that application in place (PATCH);
+    // otherwise we create a new assessment (POST).
+    const persist =
+      completing && applicationId ? completeApplication(applicationId, data) : assessFarmer(data);
+    const assessmentPromise = persist
       .then((result) => {
         setApiResult(result);
         return result;
@@ -415,9 +468,27 @@ export default function NewAssessmentWizard() {
   return (
     <div className="mx-auto max-w-4xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-foreground">New Assessment</h1>
-        <p className="text-sm text-muted-foreground">Create a new farmer assessment — step by step.</p>
+        <h1 className="text-2xl font-semibold text-foreground">
+          {completing ? "Complete Application" : "New Assessment"}
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          {completing
+            ? "Review the details captured over USSD and complete the rest during the site visit."
+            : "Create a new farmer assessment — step by step."}
+        </p>
       </div>
+
+      {completing && (
+        <div className="mb-6 rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">
+          Completing application <span className="font-semibold">{applicationId}</span>
+          {channelMeta?.source ? ` · submitted via ${channelMeta.source}` : ""}
+          {channelMeta?.preferredLanguage ? ` · preferred language: ${channelMeta.preferredLanguage}` : ""}
+          {channelMeta?.requestedCategories?.length
+            ? ` · requested: ${channelMeta.requestedCategories.join(", ")}`
+            : ""}
+          . Pre-filled fields below come from USSD — complete the remaining fields and save. Your entries are not overwritten.
+        </div>
+      )}
 
       {/* Stepper */}
       <div className="mb-6 overflow-auto">

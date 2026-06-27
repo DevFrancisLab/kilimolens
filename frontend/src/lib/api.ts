@@ -130,6 +130,24 @@ export async function assessFarmer(form: unknown, signal?: AbortSignal): Promise
   return (await res.json()) as AssessmentResult;
 }
 
+/** Complete a loan application in place (loan officer site visit). Merges the
+ *  officer's edited form over the application created from USSD, preserving the
+ *  USSD-captured data and audit timestamps. Returns the (re)scored result. */
+export async function completeApplication(
+  reference: string,
+  form: unknown,
+  signal?: AbortSignal,
+): Promise<AssessmentResult> {
+  const res = await fetch(`${API_BASE}/applications/${encodeURIComponent(reference)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(form),
+    signal,
+  });
+  if (!res.ok) throw new Error(`Complete failed: ${res.status} ${res.statusText}`);
+  return (await res.json()) as AssessmentResult;
+}
+
 export async function getHealth(): Promise<unknown> {
   const res = await fetch(`${API_BASE}/health`);
   if (!res.ok) throw new Error(`Health failed: ${res.status}`);

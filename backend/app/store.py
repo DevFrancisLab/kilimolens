@@ -100,6 +100,134 @@ def save_assessment(farmer_id: str, request_payload: dict[str, Any], result: dic
     return {"id": assessment_id, "createdAt": created, "status": row["status"]}
 
 
+def save_loan_application(
+    *,
+    reference: str,
+    phone: str,
+    amount: float,
+    categories: list[str],
+    language: str,
+    source: str = "USSD",
+    status: str = "Pending Site Visit",
+) -> dict[str, Any]:
+    """Create a new loan application from a low-touch channel (e.g. USSD).
+
+    Writes a row into the SAME ``assessments`` store the dashboard's New Loan
+    Application list reads, populating only the fields a channel like USSD can
+    collect and leaving the rest empty. No credit scoring is run — the
+    application is pending the loan officer's site visit. The schema is NOT
+    changed: channel-specific fields (reference, source, language, requested
+    categories) are kept in the JSON payload.
+
+    Each call inserts a new application (the reference is its id); it never
+    updates a previous one.
+    """
+    from app.graph.repository import farmer_id  # local import avoids an import cycle
+
+    created = _now_iso()
+    category_label = ", ".join(categories)
+    payload = {
+        "personal": {
+            "phone": phone,
+            "loanAmountRequested": str(int(amount)),
+            "purposeOfLoan": category_label,
+        },
+        "channel": {
+            "source": source,
+            "preferredLanguage": language,
+            "applicationReference": reference,
+            "requestedCategories": categories,
+        },
+    }
+    result = {
+        "applicationReference": reference,
+        "applicationSource": source,
+        "preferredLanguage": language,
+        "requestedCategories": categories,
+        "amountRequested": amount,
+        "status": status,
+        # Audit trail — created/updated timestamps live in the JSON payload so the
+        # table schema is unchanged. The loan officer's completion appends to this.
+        "createdAt": created,
+        "updatedAt": created,
+        "audit": [{"event": "ussd_submitted", "source": source, "at": created}],
+    }
+    row = {
+        "id": reference,
+        "farmer_id": farmer_id(payload),
+        "farmer_name": "",
+        "phone": phone,
+        "county": "",
+        "gender": "",
+        "loan_amount": float(amount),
+        "purpose": category_label,
+        "readiness": None,
+        "confidence": None,
+        "recommendation": None,
+        "status": status,
+        "model_version": "",
+        "created_at": created,
+        "request_json": json.dumps(payload),
+        "result_json": json.dumps(result),
+    }
+    with _LOCK, _connect() as conn:
+        conn.execute(
+            f"INSERT INTO assessments ({','.join(row)}) VALUES ({','.join('?' for _ in row)})",
+            list(row.values()),
+        )
+    return {"id": reference, "reference": reference, "createdAt": created, "status": status}
+
+
+def update_application(
+    application_id: str,
+    *,
+    request_json: str,
+    result_json: str,
+    farmer_id: str,
+    farmer_name: str,
+    phone: str,
+    county: str,
+    gender: str,
+    loan_amount: float,
+    purpose: str,
+    readiness: Optional[int],
+    confidence: Optional[int],
+    recommendation: Optional[str],
+    status: str,
+    model_version: str,
+) -> Optional[dict[str, Any]]:
+    """Update an existing loan application in place (e.g. a loan officer
+    completing a USSD-originated application during the site visit).
+
+    ``created_at`` is preserved (audit timestamp); the caller is responsible for
+    keeping the channel metadata and audit trail inside ``result_json``. Returns
+    ``None`` if the application does not exist — never inserts a new row.
+    """
+    with _LOCK, _connect() as conn:
+        existing = conn.execute(
+            "SELECT created_at FROM assessments WHERE id = ?", (application_id,)
+        ).fetchone()
+        if not existing:
+            return None
+        created = existing["created_at"]
+        conn.execute(
+            """
+            UPDATE assessments SET
+              farmer_id = ?, farmer_name = ?, phone = ?, county = ?, gender = ?,
+              loan_amount = ?, purpose = ?, readiness = ?, confidence = ?,
+              recommendation = ?, status = ?, model_version = ?,
+              request_json = ?, result_json = ?
+            WHERE id = ?
+            """,
+            (
+                farmer_id, farmer_name, phone, county, gender, loan_amount, purpose,
+                readiness, confidence, recommendation, status, model_version,
+                request_json, result_json, application_id,
+            ),
+        )
+    return {"id": application_id, "createdAt": created, "status": status}
+
+
 def _summary(r: sqlite3.Row) -> dict[str, Any]:
     return {
         "id": r["id"],

@@ -14,10 +14,10 @@ from fastapi import APIRouter, HTTPException, Query
 from app import store
 from app.climate import get_climate, parse_coords
 from app.config import get_settings
-from app.explain.explainer import generate_explanation
-from app.graph.repository import GraphRepository, farmer_id
+from app.graph.repository import GraphRepository
 from app.ml.scorer import CreditScorer
 from app.schemas import AssessmentRequest, AssessmentResponse
+from app.services.assessment_service import complete_application, run_assessment
 
 router = APIRouter()
 
@@ -38,48 +38,24 @@ def health() -> dict:
 
 @router.post("/assess", response_model=AssessmentResponse)
 def assess(request: AssessmentRequest) -> AssessmentResponse:
-    payload = request.model_dump()
-    repo = GraphRepository()
-    scorer = CreditScorer.instance()
+    # The full pipeline (graph → model → climate → explanation → persist) lives
+    # in the shared assessment service, reused by the USSD channel.
+    return run_assessment(request)
 
-    # 1. Knowledge graph: persist the farmer and derive network features.
-    fid = repo.upsert_farmer(payload) if request.persist else farmer_id(payload)
-    graph_features = repo.graph_features(fid, payload)
 
-    # 2. ML: credit readiness + confidence + SHAP drivers.
-    result = scorer.score(payload, graph_features)
+@router.patch("/applications/{reference}", response_model=AssessmentResponse)
+def complete_loan_application(reference: str, request: AssessmentRequest) -> AssessmentResponse:
+    """Complete a loan application in place (loan officer site visit).
 
-    # 3. Climate intelligence (real, from the farm's coordinates).
-    personal = payload.get("personal", {}) or {}
-    lat, lon = parse_coords(personal.get("gps", ""), personal.get("county", ""))
-    climate = get_climate(lat, lon, personal.get("county", ""))
-
-    # 4. Explainable AI: plain-language explanation grounded in the drivers.
-    explanation = generate_explanation(result, graph_features)
-
-    response = AssessmentResponse(
-        farmerId=fid,
-        creditReadinessScore=result["creditReadinessScore"],
-        confidenceScore=result["confidenceScore"],
-        recommendation=result["recommendation"],
-        dimensionScores=result["dimensionScores"],
-        drivers=result["drivers"],
-        graphFeatures=graph_features,
-        climate=climate,
-        explanation=explanation,
-        modelVersion=result["modelVersion"],
-    )
-
-    # 5. Persist. Neo4j is the system of record when configured; SQLite always
-    #    gets a copy so the dashboard still works if Aura is paused/unreachable.
-    if request.persist:
-        saved = store.save_assessment(fid, payload, response.model_dump())
-        meta = {"id": saved["id"], "createdAt": saved["createdAt"], "status": saved["status"]}
-        repo.record_assessment(fid, result, meta, payload)
-        response.assessmentId = saved["id"]
-        response.createdAt = saved["createdAt"]
-        response.status = saved["status"]
-
+    Used when an officer opens a USSD-originated application, fills in the fields
+    USSD could not capture (National ID, name, GPS, farm size, etc.) and saves.
+    The USSD-captured data and original creation time are preserved, the officer's
+    input is authoritative, audit timestamps are maintained, and the SAME
+    application is updated — never duplicated.
+    """
+    response = complete_application(reference, request)
+    if response is None:
+        raise HTTPException(status_code=404, detail="Application not found")
     return response
 
 

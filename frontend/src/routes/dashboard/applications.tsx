@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { listAssessments, type AssessmentSummary } from "@/lib/api";
 import { formatKES, formatDate, statusClasses } from "@/lib/format";
 
-const STATUSES = ["All", "Approved", "Under Review", "Declined"];
+const STATUSES = ["All", "Pending Site Visit", "Approved", "Under Review", "Declined"];
 
 function ApplicationsPage() {
   const [items, setItems] = useState<AssessmentSummary[]>([]);
@@ -99,6 +99,7 @@ function ApplicationsPage() {
                 <th className="px-4 py-3">Recommendation</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Submitted</th>
+                <th className="px-4 py-3">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -127,6 +128,25 @@ function ApplicationsPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">{formatDate(row.createdAt)}</td>
+                  <td className="px-4 py-3">
+                    {row.status === "Pending Site Visit" ? (
+                      <Link
+                        to="/dashboard/new-assessment"
+                        search={{ application: row.id }}
+                        className="inline-flex items-center rounded-lg gradient-brand px-3 py-1.5 text-xs font-medium text-primary-foreground"
+                      >
+                        Complete
+                      </Link>
+                    ) : (
+                      <Link
+                        to="/dashboard/farmer-profiles"
+                        search={{ id: row.farmerId } as any}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        View
+                      </Link>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -114,6 +114,112 @@ Knowledge-graph neighborhood for the graph-explorer UI.
 
 ---
 
+## USSD & SMS (Africa's Talking)
+
+Farmers with any phone — no smartphone, no internet — can **request financing**
+over USSD. The flow deliberately collects no personal identifiers: National ID,
+name, county, farm size, GPS, livestock counts, photos and cooperative details
+are gathered later by the loan officer during the farm visit. The farmer's phone
+number is supplied by Africa's Talking and is never typed.
+
+```
+app/
+  routers/   ussd.py, sms.py            # Africa's Talking callbacks
+  services/  ussd_engine.py             # financing-request menu state machine (EN/SW + local)
+             africas_talking.py         # async SMS client (httpx)
+             assessment_service.py      # shared credit-scoring pipeline (web dashboard)
+  crud/      messaging.py               # USSD sessions + SMS log (same SQLite DB)
+  store.py   save_loan_application()     # creates the loan application in the existing module
+  schemas/   messaging.py               # USSD/SMS payloads
+  utils/     phone.py, ussd.py, sms_text.py
+```
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/ussd` | POST (form) | USSD callback — returns `CON`/`END` plain text |
+| `/api/sms/inbound` | POST (form) | Inbound SMS; auto-replies to `SCORE`/`ALAMA`, `HELP`/`MSAADA` |
+| `/api/sms/delivery` | POST (form) | Delivery-report callback; updates the SMS log |
+| `/api/sms/notify` | POST (form) | Internal: SMS a farmer a message (needs `X-API-Token`) |
+
+Register your Africa's Talking USSD callback URL as `/ussd` and the SMS callbacks
+as `/api/sms/inbound` and `/api/sms/delivery`.
+
+**USSD flow** (≤ 4 screens after language selection):
+
+1. **Language** — English / Kiswahili / Local Language (Kikuyu, Kamba, Luo,
+   Kalenjin, Luhya). The selection is stored on the application.
+2. **Main menu** — Request Financing / Check Application Status / Help.
+3. **Request Financing** → select needs (multi-select, e.g. `1,2,5`: Seeds,
+   Fertilizer, Irrigation, Livestock, Farm Equipment, Other) → estimated amount
+   → confirmation showing the requested items, amount and a unique **reference**
+   (`RF-XXXXXXXX`). If SMS is enabled the reference is also texted to the farmer.
+4. **Check Application Status** — looks up the farmer's latest application by
+   phone and shows its reference, items, amount and status.
+
+**On submit, a new Loan Application is created in the existing module** (the same
+`assessments` store the dashboard's New Loan Application list reads), via
+`store.save_loan_application()` — the schema is **not** modified. Only the
+USSD-collectable fields are populated:
+
+| Loan Application field | Value |
+|-----------------------|-------|
+| Phone Number | farmer's MSISDN (from Africa's Talking) |
+| Preferred Language | English / Kiswahili / Kikuyu / Kamba / Luo / Kalenjin / Luhya |
+| Requested Financing Categories | selected needs |
+| Amount Requested | entered amount |
+| Application Reference | `RF-XXXXXXXX` (also the application id) |
+| Application Source | `USSD` |
+| Status | `Pending Site Visit` |
+| Created At | set automatically |
+
+All remaining fields are left empty and **no credit scoring is run** — the
+application awaits the loan officer's site visit. Channel-specific fields
+(reference, source, language, categories) are stored in the application's JSON
+payload so the schema stays unchanged. Each submission creates a **new**
+application; an existing one is never updated.
+
+### Completing a USSD application (loan officer site visit)
+
+In the dashboard's Applications list, a `Pending Site Visit` row has a **Complete**
+action that opens the New Loan Application wizard pre-filled with the USSD data
+(`/dashboard/new-assessment?application=RF-XXXXXXXX`). The officer fills in the
+fields USSD cannot capture (National ID, name, gender, GPS, farm size, crops,
+livestock, cooperative, existing loans, irrigation, storage, …) and saves.
+
+Saving calls **`PATCH /api/applications/{reference}`**
+(`assessment_service.complete_application`), which:
+
+- merges the officer's edited form over the application and re-scores it through
+  the existing pipeline;
+- **preserves** the USSD-captured channel metadata (reference, source, preferred
+  language, requested categories) and the original `createdAt`;
+- treats the officer's input as authoritative — nothing they enter is overwritten;
+- maintains **audit timestamps** in the JSON payload: `createdAt` is kept,
+  `updatedAt` is stamped, and an `officer_completed` entry is appended to the
+  `audit` trail (alongside the original `ussd_submitted` entry);
+- **updates the same application in place** — never creates a duplicate;
+- leaves the schema unchanged (all channel/audit fields live in the JSON payload).
+
+> Local-language selections are recorded so the loan officer knows the farmer's
+> preference; screens currently render in Kiswahili (widely understood) until the
+> Kikuyu/Kamba/Luo/Kalenjin/Luhya copy is validated by native speakers — drop the
+> verified strings into `MESSAGES` in `app/services/ussd_engine.py` to enable them.
+
+**Configuration** (`.env`, never hardcoded — see `app/config.py`):
+
+| Variable | Purpose |
+|----------|---------|
+| `AT_USERNAME` | Africa's Talking username (`sandbox` for the sandbox). |
+| `AT_API_KEY` | API key. Leave blank to disable outbound SMS (USSD still works; sends are skipped + logged). |
+| `AT_SENDER_ID` | Registered shortcode / alphanumeric sender id (optional). |
+| `AT_USSD_DEFAULT_LANGUAGE` | `en` or `sw`. |
+| `INTERNAL_API_TOKEN` | Shared secret for `/api/sms/notify`. Blank = endpoint disabled. |
+
+Like the rest of KilimoLens, the channels **degrade gracefully**: with no
+`AT_API_KEY`, USSD scoring works end-to-end and SMS sends are skipped and logged.
+
+---
+
 ## Fairness & responsible data use
 
 - **Protected & collateral-proxy attributes are excluded from the model.**
