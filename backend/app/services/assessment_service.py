@@ -64,15 +64,13 @@ def run_assessment(request: AssessmentRequest) -> AssessmentResponse:
     # 5. Persist. Neo4j is the system of record when configured; SQLite always
     #    gets a copy so the dashboard still works if Aura is paused/unreachable.
     if request.persist:
-        saved = store.save_assessment(fid, payload, response.model_dump())
+        full = response.model_dump()
+        saved = store.save_assessment(fid, payload, full)
         meta = {"id": saved["id"], "createdAt": saved["createdAt"], "status": saved["status"]}
-        result_min = {
-            "creditReadinessScore": response.creditReadinessScore,
-            "confidenceScore": response.confidenceScore,
-            "recommendation": response.recommendation,
-            "modelVersion": response.modelVersion,
-        }
-        repo.record_assessment(fid, result_min, meta, payload)
+        # Store the FULL result in Neo4j too (drivers, dimensions, climate,
+        # explanation, graph features) so dashboard reads from the graph render
+        # the complete profile — not just the four headline scores.
+        repo.record_assessment(fid, full, meta, payload)
         response.assessmentId = saved["id"]
         response.createdAt = saved["createdAt"]
         response.status = saved["status"]

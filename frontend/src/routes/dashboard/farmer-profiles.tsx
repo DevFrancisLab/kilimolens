@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Loader2, Users, ArrowLeft, MapPin, Sprout, ShieldCheck, CloudRain, Share2 } from "lucide-react";
+import { Loader2, Users, ArrowLeft, MapPin, ShieldCheck, CloudRain, Share2 } from "lucide-react";
 
 import DashboardLayout from "@/components/dashboard/Layout";
 import { Button } from "@/components/ui/button";
@@ -64,16 +64,20 @@ function FarmerList() {
             >
               <div className="flex items-center gap-3">
                 <div className="grid h-11 w-11 place-items-center rounded-full bg-emerald-500 text-white">
-                  {f.farmerName.slice(0, 1).toUpperCase()}
+                  {(f.farmerName || "?").slice(0, 1).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <div className="truncate font-medium text-foreground">{f.farmerName}</div>
+                  <div className="truncate font-medium text-foreground">{f.farmerName || "Unknown Farmer"}</div>
                   <div className="text-xs text-muted-foreground">{f.county || "—"}</div>
                 </div>
               </div>
               <div className="mt-4 flex items-center justify-between">
                 <div>
-                  <div className={`text-2xl font-semibold ${readinessClasses(f.readiness)}`}>{f.readiness}%</div>
+                  {f.readiness == null ? (
+                    <div className="text-2xl font-semibold text-muted-foreground">—</div>
+                  ) : (
+                    <div className={`text-2xl font-semibold ${readinessClasses(f.readiness)}`}>{f.readiness}%</div>
+                  )}
                   <div className="text-xs text-muted-foreground">credit readiness</div>
                 </div>
                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs ${statusClasses(f.status)}`}>
@@ -146,12 +150,17 @@ function FarmerDetailView({ id }: { id: string }) {
       </div>
     );
 
-  const p = data.profile;
+  const p: any = data.profile || {};
   const personal = p.personal || {};
   const farm = p.farm || {};
   const finance = p.finance || {};
   const community = p.community || {};
-  const result = data.latest;
+  const channel = p.channel || {};
+  const result: any = data.latest || {};
+  // A fully-scored assessment has model drivers; a USSD/pending application (or a
+  // legacy thin record) does not — render those gracefully instead of crashing.
+  const scored = result.creditReadinessScore != null && Array.isArray(result.drivers);
+  const appId = data.summary?.id;
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -170,24 +179,58 @@ function FarmerDetailView({ id }: { id: string }) {
             {personal.village ? `${personal.village}, ` : ""}{personal.county || "—"} · {personal.phone || "no phone"}
           </div>
         </div>
-        <Link to="/dashboard/new-assessment">
-          <Button>Re-assess</Button>
-        </Link>
+        {scored ? (
+          <Link to="/dashboard/new-assessment"><Button>Re-assess</Button></Link>
+        ) : appId ? (
+          <Link to="/dashboard/new-assessment" search={{ application: appId } as any}>
+            <Button>Complete assessment</Button>
+          </Link>
+        ) : null}
       </div>
+
+      {/* Pending banner for unassessed (e.g. USSD) applications */}
+      {!scored && (
+        <div className="mt-6 rounded-2xl border border-indigo-200 bg-indigo-50 p-5 text-sm text-indigo-900">
+          <div className="font-medium">This application is pending assessment.</div>
+          <p className="mt-1 text-indigo-800/80">
+            {channel.source === "USSD" ? "Submitted via USSD" : "Submitted"}
+            {channel.preferredLanguage ? ` · preferred language: ${channel.preferredLanguage}` : ""}
+            {Array.isArray(channel.requestedCategories) && channel.requestedCategories.length
+              ? ` · requested: ${channel.requestedCategories.join(", ")}`
+              : ""}
+            . Open it to complete the captured details and run the assessment.
+          </p>
+          {appId && (
+            <Link
+              to="/dashboard/new-assessment"
+              search={{ application: appId } as any}
+              className="mt-3 inline-block text-sm font-semibold text-indigo-700 hover:underline"
+            >
+              Complete assessment →
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Score hero */}
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl bg-linear-to-r from-emerald-500 to-sky-500 p-5 text-white">
           <div className="text-sm font-medium">Credit Readiness</div>
-          <div className="mt-2 text-3xl font-bold">{result.creditReadinessScore}%</div>
+          <div className="mt-2 text-3xl font-bold">
+            {result.creditReadinessScore != null ? `${result.creditReadinessScore}%` : "—"}
+          </div>
         </div>
         <div className="rounded-2xl border border-border bg-card p-5">
           <div className="text-sm text-muted-foreground">Confidence</div>
-          <div className="mt-2 text-3xl font-bold text-foreground">{result.confidenceScore}%</div>
+          <div className="mt-2 text-3xl font-bold text-foreground">
+            {result.confidenceScore != null ? `${result.confidenceScore}%` : "—"}
+          </div>
         </div>
         <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="text-sm text-muted-foreground">Recommendation</div>
-          <div className={`mt-2 text-2xl font-semibold ${readinessClasses(result.creditReadinessScore)}`}>{result.recommendation}</div>
+          <div className="text-sm text-muted-foreground">{scored ? "Recommendation" : "Status"}</div>
+          <div className="mt-2 text-2xl font-semibold text-foreground">
+            {result.recommendation || data.summary?.status || "Pending"}
+          </div>
         </div>
         <div className="rounded-2xl border border-border bg-card p-5">
           <div className="text-sm text-muted-foreground">Loan Requested</div>
@@ -197,23 +240,27 @@ function FarmerDetailView({ id }: { id: string }) {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          {/* Drivers */}
-          <div className="rounded-2xl border border-border bg-card p-6">
-            <h3 className="text-base font-semibold text-foreground">Why this score (model drivers)</h3>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {result.drivers.map((d) => (
-                <span
-                  key={d.feature}
-                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${d.direction === "positive" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}
-                >
-                  {d.direction === "positive" ? "▲" : "▼"} {d.label}: {d.value}
-                </span>
-              ))}
+          {/* Drivers — only when scored */}
+          {scored && (
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h3 className="text-base font-semibold text-foreground">Why this score (model drivers)</h3>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {result.drivers.map((d: any) => (
+                  <span
+                    key={d.feature}
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${d.direction === "positive" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}
+                  >
+                    {d.direction === "positive" ? "▲" : "▼"} {d.label}: {d.value}
+                  </span>
+                ))}
+              </div>
+              {result.explanation?.summary && (
+                <p className="mt-3 text-sm text-muted-foreground">{result.explanation.summary}</p>
+              )}
             </div>
-            <p className="mt-3 text-sm text-muted-foreground">{result.explanation.summary}</p>
-          </div>
+          )}
 
-          {/* Profile data */}
+          {/* Profile data — always available */}
           <div className="rounded-2xl border border-border bg-card p-6">
             <h3 className="text-base font-semibold text-foreground">Personal & Farm</h3>
             <div className="mt-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
@@ -231,62 +278,70 @@ function FarmerDetailView({ id }: { id: string }) {
               <Field label="Monthly income" value={finance.averageMonthlyIncome ? formatKES(Number(finance.averageMonthlyIncome)) : ""} />
               <Field label="Mobile money" value={finance.mobileMoneyActivity} />
               <Field label="Cooperative" value={community.cooperativeMembership || community.cooperative} />
-              <Field label="SACCO" value={community.selectedSacco || community.saccoMembership} />
+              <Field label="Preferred language" value={channel.preferredLanguage} />
             </div>
           </div>
 
           {/* Assessment history */}
-          <div className="rounded-2xl border border-border bg-card p-6">
-            <h3 className="text-base font-semibold text-foreground">Assessment History</h3>
-            <div className="mt-3 space-y-2">
-              {data.history.map((h) => (
-                <div key={h.id} className="flex items-center justify-between border-b border-border/60 pb-2 text-sm last:border-0">
-                  <span className="text-muted-foreground">{formatDate(h.createdAt)}</span>
-                  <span className="font-medium">{h.readiness}% readiness</span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs ${statusClasses(h.status)}`}>{h.status}</span>
-                </div>
-              ))}
+          {Array.isArray(data.history) && data.history.length > 0 && (
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h3 className="text-base font-semibold text-foreground">Assessment History</h3>
+              <div className="mt-3 space-y-2">
+                {data.history.map((h) => (
+                  <div key={h.id} className="flex items-center justify-between border-b border-border/60 pb-2 text-sm last:border-0">
+                    <span className="text-muted-foreground">{formatDate(h.createdAt)}</span>
+                    <span className="font-medium">{h.readiness != null ? `${h.readiness}% readiness` : "Not assessed"}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-xs ${statusClasses(h.status)}`}>{h.status}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Sidebar: scores, climate, graph */}
+        {/* Sidebar: scores, climate, graph — only when present */}
         <div className="space-y-6">
-          <div className="rounded-2xl border border-border bg-card p-6">
-            <h3 className="flex items-center gap-2 text-base font-semibold text-foreground"><ShieldCheck className="h-4 w-4 text-primary" /> Dimension Scores</h3>
-            <div className="mt-3 space-y-2">
-              {Object.entries(result.dimensionScores).map(([k, v]) => (
-                <div key={k}>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="capitalize text-muted-foreground">{k.replace(/([A-Z])/g, " $1")}</span>
-                    <span className="font-medium text-foreground">{v as number}%</span>
+          {scored && result.dimensionScores && (
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h3 className="flex items-center gap-2 text-base font-semibold text-foreground"><ShieldCheck className="h-4 w-4 text-primary" /> Dimension Scores</h3>
+              <div className="mt-3 space-y-2">
+                {Object.entries(result.dimensionScores).map(([k, v]) => (
+                  <div key={k}>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="capitalize text-muted-foreground">{k.replace(/([A-Z])/g, " $1")}</span>
+                      <span className="font-medium text-foreground">{v as number}%</span>
+                    </div>
+                    <div className="mt-1 h-1.5 w-full rounded-full bg-muted/30">
+                      <div style={{ width: `${v}%` }} className="h-1.5 rounded-full bg-primary" />
+                    </div>
                   </div>
-                  <div className="mt-1 h-1.5 w-full rounded-full bg-muted/30">
-                    <div style={{ width: `${v}%` }} className="h-1.5 rounded-full bg-primary" />
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="rounded-2xl border border-border bg-card p-6">
-            <h3 className="flex items-center gap-2 text-base font-semibold text-foreground"><CloudRain className="h-4 w-4 text-sky-500" /> Climate</h3>
-            <div className="mt-3 space-y-1.5 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Rainfall</span><span>{result.climate.rainfallMmYr} mm/yr</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Avg temp</span><span>{result.climate.avgTempC} °C</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Drought risk</span><span>{result.climate.droughtRiskPct}%</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Soil</span><span>{result.climate.soilSuitability}</span></div>
-              <div className="mt-1 text-xs text-muted-foreground">Source: {result.climate.source}</div>
+          {result.climate && (
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h3 className="flex items-center gap-2 text-base font-semibold text-foreground"><CloudRain className="h-4 w-4 text-sky-500" /> Climate</h3>
+              <div className="mt-3 space-y-1.5 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Rainfall</span><span>{result.climate.rainfallMmYr} mm/yr</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Avg temp</span><span>{result.climate.avgTempC} °C</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Drought risk</span><span>{result.climate.droughtRiskPct}%</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Soil</span><span>{result.climate.soilSuitability}</span></div>
+                <div className="mt-1 text-xs text-muted-foreground">Source: {result.climate.source}</div>
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="rounded-2xl border border-border bg-card p-6">
-            <h3 className="flex items-center gap-2 text-base font-semibold text-foreground"><Share2 className="h-4 w-4 text-primary" /> Knowledge Graph</h3>
-            <p className="mt-2 text-sm text-muted-foreground">Cooperative network strength {result.graphFeatures.cooperativeNetworkStrength} · peer repayment {result.graphFeatures.peerRepaymentScore}</p>
-            <Link to="/dashboard/knowledge-graph" search={{ id } as any} className="mt-3 inline-block text-sm font-medium text-primary hover:underline">
-              Open in graph explorer →
-            </Link>
-          </div>
+          {result.graphFeatures && (
+            <div className="rounded-2xl border border-border bg-card p-6">
+              <h3 className="flex items-center gap-2 text-base font-semibold text-foreground"><Share2 className="h-4 w-4 text-primary" /> Knowledge Graph</h3>
+              <p className="mt-2 text-sm text-muted-foreground">Cooperative network strength {result.graphFeatures.cooperativeNetworkStrength} · peer repayment {result.graphFeatures.peerRepaymentScore}</p>
+              <Link to="/dashboard/knowledge-graph" search={{ id } as any} className="mt-3 inline-block text-sm font-medium text-primary hover:underline">
+                Open in graph explorer →
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>
