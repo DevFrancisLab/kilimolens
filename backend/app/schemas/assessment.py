@@ -129,7 +129,7 @@ class Explanation(BaseModel):
     farmerMessage: str  # plain-language English, SMS/USSD-friendly
     farmerMessageSw: str = ""  # Kiswahili version for SMS/USSD
     nextSteps: list[str]
-    source: str  # "featherless" | "fallback"
+    source: str  # "gemini" | "fallback"
 
 
 class AssessmentResponse(BaseModel):

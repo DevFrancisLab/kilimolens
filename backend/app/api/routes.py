@@ -31,7 +31,7 @@ def health() -> dict:
         "status": "ok",
         "model": {"loaded": scorer.ready, "version": scorer.model_version},
         "neo4j": {"enabled": repo.enabled, "error": repo.client.last_error},
-        "featherless": {"enabled": settings.featherless_enabled, "model": settings.featherless_model},
+        "gemini": {"enabled": settings.gemini_enabled, "model": settings.gemini_model},
         "store": {"assessments": store.stats()["totalAssessments"]},
     }
 

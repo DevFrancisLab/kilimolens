@@ -2,7 +2,7 @@
 # Docs: https://render.com/docs/blueprint-spec
 #
 # Create the service: Render Dashboard → New → Blueprint → pick this repo.
-# Then fill in the secret env vars marked `sync: false` (Neo4j, Featherless,
+# Then fill in the secret env vars marked `sync: false` (Neo4j, Gemini,
 # Africa's Talking) in the Render dashboard. Nothing secret lives in the repo.
 services:
   - type: web
@@ -41,13 +41,13 @@ services:
       - key: NEO4J_DATABASE
         sync: false
 
-      # ── Featherless AI (optional LLM explanations). Blank => template fallback. ──
-      - key: FEATHERLESS_API_KEY
+      # ── Gemini (Google) for LLM explanations. Blank => template fallback. ──
+      - key: GEMINI_API_KEY
         sync: false
-      - key: FEATHERLESS_BASE_URL
-        value: https://api.featherless.ai/v1
-      - key: FEATHERLESS_MODEL
-        value: mistralai/Mistral-7B-Instruct-v0.3
+      - key: GEMINI_BASE_URL
+        value: https://generativelanguage.googleapis.com/v1beta/openai/
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
 
       # ── Africa's Talking (USSD + SMS). Blank AT_API_KEY => SMS disabled. ──
       - key: AT_USERNAME

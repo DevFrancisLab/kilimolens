@@ -1,9 +1,11 @@
 """Explainable-AI layer: turn the model's SHAP drivers into language a loan
-officer and a farmer can act on, using LangChain + Featherless AI.
+officer and a farmer can act on, using LangChain + Gemini 2.5 Flash.
 
-The LLM is grounded strictly in the model's own drivers (no free invention).
-If FEATHERLESS_API_KEY is unset or the call fails, a deterministic template
-produces the same JSON shape so the API never breaks.
+Gemini is reached through its OpenAI-compatible endpoint, so the existing
+``langchain-openai`` client is reused (no extra dependency). The LLM is grounded
+strictly in the model's own drivers (no free invention). If GEMINI_API_KEY is
+unset or the call fails, a deterministic template produces the same JSON shape so
+the API never breaks.
 """
 from __future__ import annotations
 
@@ -50,11 +52,11 @@ def _format_drivers(drivers: list[dict[str, Any]]) -> str:
 def generate_explanation(result: dict[str, Any], graph_features: dict[str, Any]) -> dict[str, Any]:
     settings = get_settings()
     drivers = result.get("drivers", [])
-    if settings.featherless_enabled:
+    if settings.gemini_enabled:
         try:
             return _llm_explanation(settings, result, graph_features, drivers)
         except Exception as exc:  # pragma: no cover - network/dep failures
-            print(f"[explain] Featherless call failed, using fallback: {exc}")
+            print(f"[explain] Gemini call failed, using fallback: {exc}")
     return _fallback_explanation(result, graph_features, drivers)
 
 
@@ -63,12 +65,17 @@ def _llm_explanation(settings, result, graph_features, drivers) -> dict[str, Any
     from langchain_openai import ChatOpenAI
 
     llm = ChatOpenAI(
-        model=settings.featherless_model,
-        api_key=settings.featherless_api_key,
-        base_url=settings.featherless_base_url,
+        model=settings.gemini_model,
+        api_key=settings.gemini_api_key,
+        base_url=settings.gemini_base_url,
         temperature=0.3,
-        max_tokens=600,
-        timeout=40,
+        # Gemini 2.5 Flash spends part of the budget on "thinking"; keep enough
+        # headroom for the full JSON so the response isn't truncated.
+        max_tokens=2048,
+        timeout=60,
+        # Force a clean JSON object (Gemini's OpenAI-compatible endpoint supports
+        # response_format) so parsing never trips on prose or markdown fences.
+        model_kwargs={"response_format": {"type": "json_object"}},
     )
     prompt = _USER_TEMPLATE.format(
         readiness=result["creditReadinessScore"],
@@ -87,7 +94,7 @@ def _llm_explanation(settings, result, graph_features, drivers) -> dict[str, Any
         "farmerMessage": data.get("farmerMessage", "").strip() or _farmer_message(result, drivers),
         "farmerMessageSw": data.get("farmerMessageSw", "").strip() or _farmer_message_sw(result, drivers),
         "nextSteps": _as_list(data.get("nextSteps")) or _next_steps(drivers),
-        "source": "featherless",
+        "source": "gemini",
     }
 
 
@@ -148,7 +155,7 @@ def _farmer_message(result, drivers) -> str:
     return msg[:320]
 
 
-# Kiswahili labels for the fallback SMS (used when Featherless is off).
+# Kiswahili labels for the fallback SMS (used when Gemini is off).
 _SW_LABELS = {
     "repayment_history": "historia ya kulipa madeni",
     "mobile_money_activity": "matumizi ya pesa za simu",

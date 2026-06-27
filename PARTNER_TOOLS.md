@@ -39,24 +39,24 @@ relationships natively, and lets us derive trust signals that a tabular DB canno
 
 ---
 
-## 🟣 Featherless AI — explainable, multilingual farmer communication
+## 🟣 Gemini 2.5 Flash — explainable, multilingual farmer communication
 
 **Where**
 - The explainable-AI layer that turns the model's SHAP drivers into language a
   loan officer and a farmer can act on.
 - Generates the farmer-facing SMS/USSD message in **English and Kiswahili**.
-- API responses carry `"explanation.source": "featherless"`.
+- API responses carry `"explanation.source": "gemini"`.
 
 **Why**
 The brief requires decisions farmers can understand, delivered over SMS/USSD in
 **local languages**. That is exactly an LLM task: translate model internals (SHAP
 contributions, graph features) into fair, plain-language guidance and localise it.
-Featherless gives OpenAI-compatible access to open models, which keeps the
-explanation layer swappable and affordable.
+Gemini 2.5 Flash is fast and low-cost, and is reached through its
+OpenAI-compatible endpoint, which keeps the explanation layer swappable.
 
 **How**
-- LangChain `ChatOpenAI` pointed at the Featherless endpoint
-  (`https://api.featherless.ai/v1`).
+- LangChain `ChatOpenAI` pointed at the Gemini OpenAI-compatible endpoint
+  (`https://generativelanguage.googleapis.com/v1beta/openai/`).
 - The prompt is grounded **strictly** in the model's own drivers and scores, and
   is instructed never to cite protected attributes (gender, age, land ownership) —
   preserving the fairness design.
@@ -98,7 +98,7 @@ verifiable farmer credit credentials — noted as a roadmap item, not claimed he
 
 ```bash
 curl localhost:8000/api/health
-# -> neo4j.enabled:true, featherless.enabled:true
+# -> neo4j.enabled:true, gemini.enabled:true
 
 curl localhost:8000/api/stats          # source computed by Cypher in Neo4j
 curl "localhost:8000/api/assessments"  # "source":"neo4j"

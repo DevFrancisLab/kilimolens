@@ -20,10 +20,10 @@ class Settings(BaseSettings):
     neo4j_password: str = ""
     neo4j_database: str = "neo4j"
 
-    # Featherless AI (OpenAI-compatible)
-    featherless_api_key: str = ""
-    featherless_base_url: str = "https://api.featherless.ai/v1"
-    featherless_model: str = "mistralai/Mistral-7B-Instruct-v0.3"
+    # Gemini (Google) via the OpenAI-compatible endpoint.
+    gemini_api_key: str = ""
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
+    gemini_model: str = "gemini-2.5-flash"
 
     # Africa's Talking (USSD + SMS). Read from the environment / .env — never
     # hardcode credentials. Leave AT_API_KEY blank to run with SMS disabled
@@ -72,8 +72,8 @@ class Settings(BaseSettings):
         return bool(self.neo4j_password)
 
     @property
-    def featherless_enabled(self) -> bool:
-        return bool(self.featherless_api_key)
+    def gemini_enabled(self) -> bool:
+        return bool(self.gemini_api_key)
 
 
 @lru_cache
