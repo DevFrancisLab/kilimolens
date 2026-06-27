@@ -7,29 +7,17 @@
 services:
   - type: web
     name: kilimolens-api
-    runtime: python
-    # The FastAPI app lives in the backend/ subdirectory of this repo.
-    rootDir: backend
+    # Docker build — Python, deps, model training and the start command are all
+    # locked in backend/Dockerfile, so the host's defaults can't break the deploy.
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
     plan: free # ML deps (xgboost/shap) are memory-heavy; upgrade to `starter` if it OOMs.
     region: oregon
     branch: main
-    # Train the synthetic XGBoost model into artifacts/ at build time. If training
-    # fails (e.g. memory limits), the API still deploys and falls back to the
-    # transparent weighted heuristic — the app is designed to degrade gracefully.
-    buildCommand: >-
-      pip install --upgrade pip &&
-      pip install -r requirements.txt &&
-      (python -m app.ml.train || echo "model training skipped; using heuristic fallback")
-    # Bind to the port Render provides. --proxy-headers so HTTPS scheme / client IP
-    # are correct behind Render's proxy (needed for Africa's Talking callbacks).
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*'
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
-      # Pin Python 3.11 — numpy 1.26.4 / scikit-learn 1.5.2 have no wheels on 3.13.
-      - key: PYTHON_VERSION
-        value: "3.11.9"
-
       # ── Neo4j knowledge graph (Neo4j Aura). Leave blank to run without Neo4j;
       #    a local SQLite mirror then serves the dashboard. ──
       - key: NEO4J_URI
