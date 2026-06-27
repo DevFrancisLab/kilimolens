@@ -11,8 +11,13 @@ export default defineConfig({
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
-    nitro: { preset: "vercel" },
   },
+  // IMPORTANT: `nitro` must be a TOP-LEVEL key. The Lovable config reads
+  // `options.nitro`; nesting it under `tanstackStart` leaves it undefined, so the
+  // nitro deploy plugin is skipped on the Vercel build and no `.vercel/output` is
+  // produced — Vercel then serves a stale prebuilt bundle and every route 404s.
+  // Top-level enables the Vercel Build Output API target on each build.
+  nitro: { preset: "vercel" },
   vite: {
     server: {
       port: 5173,
