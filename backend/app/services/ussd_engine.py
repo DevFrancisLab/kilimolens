@@ -50,11 +50,6 @@ LANGUAGE_NAMES = {
     "luh": "Luhya",
 }
 
-# Until reviewed by native speakers, the local-language selection is recorded on
-# the application (so the loan officer knows the farmer's preference) and screens
-# are rendered in Kiswahili, which is widely understood across these communities.
-_DISPLAY_FALLBACK = {"kik": "sw", "kam": "sw", "luo": "sw", "kal": "sw", "luh": "sw"}
-
 # Financing needs (multi-select). Order defines the on-screen numbering.
 FINANCING_OPTIONS = [
     "Seeds",
@@ -160,9 +155,34 @@ _ITEM_LABELS = {
 }
 
 
+def _load_local_language_packs() -> None:
+    """Load the Gemini-generated local-language packs (Kikuyu, Kamba, Luo,
+    Kalenjin, Luhya) bundled as JSON next to this module. Each pack is merged onto
+    English so any missing key still renders. Falls back silently to English if
+    the file is absent or unreadable."""
+    import json
+    from pathlib import Path
+
+    path = Path(__file__).with_name("ussd_translations.json")
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:  # pragma: no cover - missing/corrupt file
+        print(f"[ussd] local-language packs not loaded ({exc}); using English fallback")
+        return
+    for code, pack in data.items():
+        msgs = pack.get("messages") or {}
+        MESSAGES[code] = {**MESSAGES["en"], **msgs}
+        items = pack.get("items")
+        if isinstance(items, list) and len(items) == len(FINANCING_OPTIONS):
+            _ITEM_LABELS[code] = items
+
+
+_load_local_language_packs()
+
+
 def _display_lang(lang: str) -> str:
-    """Map a stored language to the language its screens are rendered in."""
-    return _DISPLAY_FALLBACK.get(lang, lang if lang in MESSAGES else "en")
+    """Render in the chosen language if we have a pack for it, else English."""
+    return lang if lang in MESSAGES else "en"
 
 
 def t(lang: str, key: str) -> str:
@@ -302,7 +322,8 @@ async def _request_financing(
     # English labels are the canonical "Requested Financing Categories" stored on
     # the loan application, regardless of the farmer's display language.
     categories = [_ITEM_LABELS["en"][i - 1] for i in needs]
-    display_labels = ", ".join(_ITEM_LABELS[_display_lang(lang)][i - 1] for i in needs)
+    labels = _ITEM_LABELS.get(lang, _ITEM_LABELS["en"])
+    display_labels = ", ".join(labels[i - 1] for i in needs)
 
     reference = await run_in_threadpool(_create_loan_application, phone, lang, categories, amount)
     crud.complete_session(req.sessionId, reference, None, None, status="completed")
