@@ -64,7 +64,7 @@ FINANCING_OPTIONS = [
     "Other",
 ]
 
-_DEFAULT_STATUS = "Pending Site Visit"
+_DEFAULT_STATUS = "Pending Assessment"
 
 # ── localised copy (en / sw) ─────────────────────────────────────────────────
 MESSAGES = {
