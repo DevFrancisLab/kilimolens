@@ -1,0 +1,72 @@
+{
+  "kik": {
+    "messages": {
+      "main": "Menu ya Mbere\n1. Thaama Mbeeca\n2. Rora Uhoro wa Kũthaama\n3. Ũteithio",
+      "needs": "Thaama Mbeeca\nThiira mĩthĩĩre ya mbeeca ĩrĩa ũrabatara.\nThiira namba imwe kana makĩria, ta 1,2,5\n1. Mbeũ\n2. Mũthĩĩre\n3. Maĩ ma Kũgĩa\n4. Nyama\n5. Mĩrĩmo ya Mũgũnda\n6. Ingĩ",
+      "amount": "Thiira mũthĩĩre wa mbeeca ũrĩa ũrabatara (KES):",
+      "confirm": "Kũthaama gwaku nĩ kũtũmĩtwo.\nIci: {items}\nMũthĩĩre wa Mbeeca: KES {amount}\nNamba ya Kũmenya: {ref}\nMũthĩĩre wa mbeeca nĩ arĩkũũkĩrĩra thĩinĩ wa mathaa 48.",
+      "status_found": "Kũthaama {ref}\nIci: {items}\nMũthĩĩre: KES {amount}\nŨhoro: {status}\nRĩrĩa Ũtũmĩtwo: {date}",
+      "status_none": "Gũtirĩ kũthaama kũrĩa kũrĩ kũmenyekana na namba ĩno. Thiira Thaama Mbeeca nĩguo ũthaame.",
+      "sms_confirm": "{product}\nKũthaama gwaku nĩ kũtũmĩtwo.\nNamba ya Kũmenya: {ref}\nKũthaama: {items}\nMũthĩĩre wa Mbeeca: KES {amount}\nMũthĩĩre wa mbeeca nĩ arĩkũũkĩrĩra thĩinĩ wa mathaa 48.\nNĩ wega.",
+      "help": "KilimoLens: Thiira namba ĩno, thiira Thaama Mbeeca, thiira mĩthĩĩre yaku na mũthĩĩre wa mbeeca. Mũthĩĩre wa mbeeca nĩ arĩkũũkĩrĩra nĩguo mũrĩkĩrie kũthaama. Gũtirĩ ID kana marũa marĩa marabatara rĩu.",
+      "invalid": "Ũhoro ũrĩa ũthiĩtwo nĩ mũhĩtĩru. Thiira namba ĩno rĩngĩ."
+    },
+    "items": ["Mbeũ", "Mũthĩĩre", "Maĩ ma Kũgĩa", "Nyama", "Mĩrĩmo ya Mũgũnda", "Ingĩ"]
+  },
+  "kam": {
+    "messages": {
+      "main": "Menu Ya Mbee\n1. Omba Mbesa\n2. Kaa Ndundu Ya Ombi\n3. Kivathukany'o",
+      "needs": "Omba Mbesa\nThiimũ kĩla ũkwenda kũtũmĩa mbesa.\nAndĩka namba imwe kana mbingĩ, kwa ngelekany'o 1,2,5\n1. Mbegu\n2. Mũthĩnzĩo\n3. Kũtũmĩa Kĩw'ũ\n4. Mĩtĩ\n5. Syĩndũ sya Kũĩma\n6. Ingĩ",
+      "amount": "Andĩka mbesa ila ũkwenda (KES):",
+      "confirm": "Ombi waku nĩw'o wamũkĩlwa.\nSyĩndũ: {items}\nMbesa Ila Ũkwenda: KES {amount}\nNamba Ya Kũtũmĩa: {ref}\nMũthĩnzĩo wa mbesa nĩakũkũnĩkĩa ĩvinda ya masaa 48.",
+      "status_found": "Ombi {ref}\nSyĩndũ: {items}\nMbesa: KES {amount}\nŨndũ: {status}\nWamũkĩlwa: {date}",
+      "status_none": "Vai maombi ma namba ĩno. Thiimũ Omba Mbesa nĩ kana ũombe.",
+      "sms_confirm": "{product}\nOmbi waku wa mbesa nĩw'o wamũkĩlwa.\nNamba Ya Kũtũmĩa: {ref}\nWaombwa: {items}\nMbesa Ila Ũkwenda: KES {amount}\nMũthĩnzĩo wa mbesa nĩakũkũnĩkĩa ĩvinda ya masaa 48.\nAsante.",
+      "help": "KilimoLens: Dial namba ĩno, thiimũ Omba Mbesa, thiimũ kĩla ũkwenda na mbesa ila ũkwenda. Mũthĩnzĩo wa mbesa nĩakũkũnĩkĩa nĩ kana ũimalĩsye ombi waku. Vai ID kana syĩndũ ingĩ ila ũkwenda ĩndĩ.",
+      "invalid": "Ũndũ ũtaĩle. Kũnĩkĩa namba ĩno ĩngĩ."
+    },
+    "items": ["Mbegu", "Mũthĩnzĩo", "Kũtũmĩa Kĩw'ũ", "Mĩtĩ", "Syĩndũ sya Kũĩma", "Ingĩ"]
+  },
+  "luo": {
+    "messages": {
+      "main": "Meno Maduong'\n1. Kwayo Pesa Mar Pinyre\n2. Nono Gima Ikwayo Osechopo Nono\n3. Kony",
+      "needs": "Kwayo Pesa Mar Pinyre\nChakuru gima dwaro pesa.\nKetruru namba achiel kata mathoth, kuom ranyisi 1,2,5\n1. Nego\n2. Manyasi\n3. Tisiko Pii\n4. Lee\n5. Gi Tich Puodho\n6. Moko",
+      "amount": "Ketruru namba mar pesa modwaro (KES):",
+      "confirm": "Gima ikwayo oseyudore.\nGik: {items}\nPesa Modwaro: KES {amount}\nNamba Mar Kwayo: {ref}\nJatich KilimoLens biro goyogi simu e dier seche 48.",
+      "status_found": "Gima ikwayo {ref}\nGik: {items}\nPesa: KES {amount}\nChopo: {status}\nChiwo: {date}",
+      "status_none": "Onge gima ikwayo oseyudore gi namba ni. Kwayo Pesa Mar Pinyre mondo ikwayo.",
+      "sms_confirm": "{product}\nGima ikwayo oseyudore.\nNamba Mar Kwayo: {ref}\nGik Mokwayo: {items}\nPesa Modwaro: KES {amount}\nJatich KilimoLens biro goyogi simu e dier seche 48.\nEro kamano.",
+      "help": "KilimoLens: Goyuru kodi ni, yieruru Kwayo Pesa Mar Pinyre, konyisuru gima udwaro kod namba mar pesa. Jatich KilimoLens biro limogi mondo otiek gima ukwayo. Onge ID kata waraka moro amora modwaro sani.",
+      "invalid": "Namba ok kare. Goyuru kodi kendo."
+    },
+    "items": ["Nego", "Manyasi", "Tisiko Pii", "Lee", "Gi Tich Puodho", "Moko"]
+  },
+  "kal": {
+    "messages": {
+      "main": "Main Menu\n1. Amwaga Kinyalil\n2. Chek Statusit nepo Amwaga\n3. Konyit",
+      "needs": "Amwaga Kinyalil\nTilindoi kinyalil eng' inendet.\nIngen eng' akenge anan konyor, kasarta 1,2,5\n1. Mbecheet\n2. Mbolea\n3. Kunyitit nepo Pii\n4. Tichin\n5. Gitokwek chepo Puon\n6. Agine",
+      "amount": "Ingen sika nepo kinyalil (KES):",
+      "confirm": "Amwaga inyoo ko kanyor.\nGitokwek: {items}\nSika nepo Kinyalil: KES {amount}\nReference: {ref}\nOfisa nepo kinyalil konyor eng' kasarta nepo saa 48.",
+      "status_found": "Amwaga {ref}\nGitokwek: {items}\nSika: KES {amount}\nStatus: {status}\nKasarta nepo Amwaga: {date}",
+      "status_none": "Mii amwaga nepo namba inoo. Tilindoi Amwaga Kinyalil si amwaga.",
+      "sms_confirm": "{product}\nAmwaga inyoo ko kanyor.\nReference: {ref}\nAmwaga: {items}\nSika nepo Kinyalil: KES {amount}\nOfisa nepo kinyalil konyor eng' kasarta nepo saa 48.\nAsante.",
+      "help": "KilimoLens: Dial code inoo, tilindoi Amwaga Kinyalil, tilindoi gitokwek chepo kinyalil ak sika. Ofisa nepo kinyalil konyor si amwaga. Mii ID anan documents chebo kinyalil eng' kasarta inoo.",
+      "invalid": "Mii amwaga nepo namba inoo. Tilindoi code inoo eng' kasarta inoo."
+    },
+    "items": ["Mbecheet", "Mbolea", "Kunyitit nepo Pii", "Tichin", "Gitokwek chepo Puon", "Agine"]
+  },
+  "luh": {
+    "messages": {
+      "main": "Endi Ya Nyamafu\n1. Saba Olukweta Lwa Pesa\n2. Heka Obusimbe Bwe Lukweta\n3. Obuhabi",
+      "needs": "Saba Olukweta Lwa Pesa\nLonda obunyakwa bwo bupesa.\nAndika kamwe kana ebindi, ng'ekyokulumbako 1,2,5\n1. Imbuto\n2. Amaleva\n3. Amatsi G'okulima\n4. Ebisolo\n5. Ebikozesyo Bie Shamba\n6. Ebindi",
+      "amount": "Andika eshimali shie shisanywa shie pesa (KES):",
+      "confirm": "Olukweta lwo lwahabwa.\nEbintu: {items}\nEshimali Shie Pesa: KES {amount}\nEnyola: {ref}\nOmukulu w'ebipesha alikubira mukati ke saawa 48.",
+      "status_found": "Olukweta {ref}\nEbintu: {items}\nEshimali: KES {amount}\nObusimbe: {status}\nLwahabwa: {date}",
+      "status_none": "Kabula lukweta lwaboneka khu namba yino. Londa 'Saba Olukweta Lwa Pesa' okwihabisa.",
+      "sms_confirm": "{product}\nOlukweta lwo lwahabwa.\nEnyola: {ref}\nLwahabwa: {items}\nEshimali Shie Pesa: KES {amount}\nOmukulu w'ebipesha alikubira mukati ke saawa 48.\nWebale.",
+      "help": "KilimoLens: Kunda aka kode, londa 'Saba Olukweta Lwa Pesa', londa obunyakwa bwo n'eshimali. Omukulu w'ebipesha alikwija okumalilisa olukweta lwo. Kabula ID kana ebipapula binyakwa khandi.",
+      "invalid": "Obwandike bubi. Kunda aka kode khandi."
+    },
+    "items": ["Imbuto", "Amaleva", "Amatsi G'okulima", "Ebisolo", "Ebikozesyo Bie Shamba", "Ebindi"]
+  }
+}
