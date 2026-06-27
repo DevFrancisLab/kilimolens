@@ -15,15 +15,15 @@
   },
   "kam": {
     "messages": {
-      "main": "Menu Ya Mbee\n1. Omba Mbesa\n2. Kaa Ndundu Ya Ombi\n3. Kivathukany'o",
-      "needs": "Omba Mbesa\nThiimũ kĩla ũkwenda kũtũmĩa mbesa.\nAndĩka namba imwe kana mbingĩ, kwa ngelekany'o 1,2,5\n1. Mbegu\n2. Mũthĩnzĩo\n3. Kũtũmĩa Kĩw'ũ\n4. Mĩtĩ\n5. Syĩndũ sya Kũĩma\n6. Ingĩ",
+      "Menu Ya Mbee": "Menu Ya Mbee\n1. Voya Mbesa\n2. Kaa Ndundu Ya Ombi\n3. Kĩvathũkany'o",
+      "needs": "Omba Mbesa\nNyuva kĩla ũkwenda kũtũmĩa mbesa.\nAndĩka namba ĩmwe kana mbingĩ, kwa ngelekany'o 1,2,5\n1. Mbegu\n2. Mũthĩnzĩo\n3. Kũtũmĩa Kĩw'ũ\n4. Mĩtĩ\n5. Syĩndũ sya Kũĩma\n6. Ingĩ",
       "amount": "Andĩka mbesa ila ũkwenda (KES):",
-      "confirm": "Ombi waku nĩw'o wamũkĩlwa.\nSyĩndũ: {items}\nMbesa Ila Ũkwenda: KES {amount}\nNamba Ya Kũtũmĩa: {ref}\nMũthĩnzĩo wa mbesa nĩakũkũnĩkĩa ĩvinda ya masaa 48.",
+      "confirm": "Ombi waku nĩw'amũkĩlwa.\nSyĩndũ: {items}\nMbesa Ila Ũkwenda: KES {amount}\nNamba Ya Kũtũmĩa: {ref}\nMũvango wa mbesa nũkũkũnĩkĩa ĩvinda ya masaa 48.",
       "status_found": "Ombi {ref}\nSyĩndũ: {items}\nMbesa: KES {amount}\nŨndũ: {status}\nWamũkĩlwa: {date}",
-      "status_none": "Vai maombi ma namba ĩno. Thiimũ Omba Mbesa nĩ kana ũombe.",
-      "sms_confirm": "{product}\nOmbi waku wa mbesa nĩw'o wamũkĩlwa.\nNamba Ya Kũtũmĩa: {ref}\nWaombwa: {items}\nMbesa Ila Ũkwenda: KES {amount}\nMũthĩnzĩo wa mbesa nĩakũkũnĩkĩa ĩvinda ya masaa 48.\nAsante.",
-      "help": "KilimoLens: Dial namba ĩno, thiimũ Omba Mbesa, thiimũ kĩla ũkwenda na mbesa ila ũkwenda. Mũthĩnzĩo wa mbesa nĩakũkũnĩkĩa nĩ kana ũimalĩsye ombi waku. Vai ID kana syĩndũ ingĩ ila ũkwenda ĩndĩ.",
-      "invalid": "Ũndũ ũtaĩle. Kũnĩkĩa namba ĩno ĩngĩ."
+      "status_none": "Vai maombi ma namba ĩno. Nyuva 'Omba Mbesa' nĩ kana ũombe.",
+      "sms_confirm": "{product}\nOmbi waku wa mbesa nĩw'amũkĩlwa.\nNamba Ya Kũtũmĩa: {ref}\nWaombwa: {items}\nMbesa Ila Ũkwenda: KES {amount}\nMũvango wa mbesa nũkũkũnĩkĩa ĩvinda ya masaa 48.\nAsante.",
+      "help": "KilimoLens: Kũna namba ĩno, nyuva 'Omba Mbesa', nyuva kĩla ũkwenda na mbesa ila ũkwenda. Mũvango wa mbesa nũkũ kũnĩkĩa nĩ kana ũimalĩsye ombi waku. Vai namba ya ID kana syĩndũ ingĩ syendeka.",
+      "invalid": "Ũndũ ũtaĩle. Kũna namba ĩno ĩngĩ."
     },
     "items": ["Mbegu", "Mũthĩnzĩo", "Kũtũmĩa Kĩw'ũ", "Mĩtĩ", "Syĩndũ sya Kũĩma", "Ingĩ"]
   },
