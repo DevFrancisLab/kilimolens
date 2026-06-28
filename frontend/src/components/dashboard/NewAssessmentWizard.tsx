@@ -553,7 +553,7 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
 
               <div>
                 <label className="text-sm text-muted-foreground">Gender</label>
-                <Select defaultValue={data.personal.gender} onValueChange={(v) => update("personal", { gender: v })}>
+                <Select value={data.personal.gender} onValueChange={(v) => update("personal", { gender: v })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -579,7 +579,7 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
 
               <div>
                 <label className="text-sm text-muted-foreground">County</label>
-                <Select defaultValue={data.personal.county} onValueChange={(v) => update("personal", { county: v })}>
+                <Select value={data.personal.county} onValueChange={(v) => update("personal", { county: v })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -676,7 +676,7 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
                     <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-muted/10 text-primary"><Sprout className="h-5 w-5" /></div>
                     <div>
                       <div className="text-sm font-medium text-foreground">Primary crop</div>
-                      <Select defaultValue={data.farm.mainCrops} onValueChange={(v) => update("farm", { mainCrops: v })}>
+                      <Select value={data.farm.mainCrops} onValueChange={(v) => update("farm", { mainCrops: v })}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -730,7 +730,7 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
                     <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-muted/10 text-primary"><CloudRain className="h-5 w-5" /></div>
                     <div>
                       <div className="text-sm font-medium text-foreground">Irrigation</div>
-                      <Select defaultValue={(data.farm as any).irrigation || "Rainfed"} onValueChange={(v) => update("farm", { irrigation: v as any })}>
+                      <Select value={(data.farm as any).irrigation || "Rainfed"} onValueChange={(v) => update("farm", { irrigation: v as any })}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -806,7 +806,7 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
                       <TooltipContent>Frequency of on-time repayments over past loans.</TooltipContent>
                     </Tooltip>
                   </div>
-                  <Select defaultValue={data.finance.repaymentHistory} onValueChange={(v) => update("finance", { repaymentHistory: v })}>
+                  <Select value={data.finance.repaymentHistory} onValueChange={(v) => update("finance", { repaymentHistory: v })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -875,7 +875,7 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
                       <TooltipContent>Frequency and volume of mobile payments—used as proxy for cashflow.</TooltipContent>
                     </Tooltip>
                   </div>
-                  <Select defaultValue={data.finance.mobileMoneyActivity} onValueChange={(v) => update("finance", { mobileMoneyActivity: v })}>
+                  <Select value={data.finance.mobileMoneyActivity} onValueChange={(v) => update("finance", { mobileMoneyActivity: v })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -925,7 +925,7 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label className="text-sm text-muted-foreground">Member of cooperative?</label>
-                <Select defaultValue={data.community.cooperative} onValueChange={(v) => update("community", { cooperative: v })}>
+                <Select value={data.community.cooperative} onValueChange={(v) => update("community", { cooperative: v })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -952,7 +952,7 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <label className="text-sm text-muted-foreground">Crop Diversification</label>
-                    <Select defaultValue={data.climate.cropDiversification} onValueChange={(v) => update("climate", { cropDiversification: v })}>
+                    <Select value={data.climate.cropDiversification} onValueChange={(v) => update("climate", { cropDiversification: v })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -966,7 +966,7 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
 
                   <div>
                     <label className="text-sm text-muted-foreground">Drought-resistant crops</label>
-                    <Select defaultValue={data.climate.droughtResistantCrops} onValueChange={(v) => update("climate", { droughtResistantCrops: v })}>
+                    <Select value={data.climate.droughtResistantCrops} onValueChange={(v) => update("climate", { droughtResistantCrops: v })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -982,7 +982,7 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <label className="text-sm text-muted-foreground">Water harvesting</label>
-                    <Select defaultValue={data.climate.waterHarvesting} onValueChange={(v) => update("climate", { waterHarvesting: v })}>
+                    <Select value={data.climate.waterHarvesting} onValueChange={(v) => update("climate", { waterHarvesting: v })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -997,7 +997,7 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
 
                   <div>
                     <label className="text-sm text-muted-foreground">Soil conservation</label>
-                    <Select defaultValue={data.climate.soilConservation} onValueChange={(v) => update("climate", { soilConservation: v })}>
+                    <Select value={data.climate.soilConservation} onValueChange={(v) => update("climate", { soilConservation: v })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -1014,7 +1014,7 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <label className="text-sm text-muted-foreground">Livelihood diversification</label>
-                    <Select defaultValue={data.climate.livelihoodDiversification} onValueChange={(v) => update("climate", { livelihoodDiversification: v })}>
+                    <Select value={data.climate.livelihoodDiversification} onValueChange={(v) => update("climate", { livelihoodDiversification: v })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -1030,7 +1030,7 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
 
                   <div>
                     <label className="text-sm text-muted-foreground">Irrigation</label>
-                    <Select defaultValue={data.climate.irrigation} onValueChange={(v) => update("climate", { irrigation: v })}>
+                    <Select value={data.climate.irrigation} onValueChange={(v) => update("climate", { irrigation: v })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -1045,7 +1045,7 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
 
                 <div>
                   <label className="text-sm text-muted-foreground">Climate-smart training</label>
-                  <Select defaultValue={data.climate.climateSmartTraining} onValueChange={(v) => update("climate", { climateSmartTraining: v })}>
+                  <Select value={data.climate.climateSmartTraining} onValueChange={(v) => update("climate", { climateSmartTraining: v })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
