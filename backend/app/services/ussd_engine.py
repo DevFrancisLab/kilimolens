@@ -255,14 +255,6 @@ def _new_reference() -> str:
     return "RF-" + uuid.uuid4().hex[:8].upper()
 
 
-def _sms_background(
-    sms_client: AfricasTalkingClient, phone: str, message: str
-) -> Optional[BackgroundTask]:
-    if not get_settings().sms_enabled or not message:
-        return None
-    return BackgroundTask(sms_client.send_sms, phone, message)
-
-
 # ── public entry point ───────────────────────────────────────────────────────
 async def handle(req: UssdRequest, sms_client: AfricasTalkingClient) -> PlainTextResponse:
     settings = get_settings()
@@ -318,44 +310,43 @@ async def _request_financing(
         crud.complete_session(req.sessionId, None, None, None, status="abandoned")
         return end(t(lang, "invalid"))
 
-    # Screen 3: persist + confirm.
-    # English labels are the canonical "Requested Financing Categories" stored on
-    # the loan application, regardless of the farmer's display language.
+    # Screen 3: persist to the fast local store and confirm IMMEDIATELY. The
+    # heavier work — mirroring to Neo4j and sending the confirmation SMS — runs in
+    # the background AFTER the response is flushed, so the USSD reply is fast and
+    # never times out at Africa's Talking (which shows "technical issue" on slow
+    # or failed callbacks).
     categories = [_ITEM_LABELS["en"][i - 1] for i in needs]
     labels = _ITEM_LABELS.get(lang, _ITEM_LABELS["en"])
     display_labels = ", ".join(labels[i - 1] for i in needs)
 
-    reference = await run_in_threadpool(_create_loan_application, phone, lang, categories, amount)
+    saved = await run_in_threadpool(_save_loan_application, phone, lang, categories, amount)
+    reference = saved["reference"]
     crud.complete_session(req.sessionId, reference, None, None, status="completed")
 
     body = t(lang, "confirm").format(items=display_labels, amount=f"{int(amount):,}", ref=reference)
-    # Confirmation SMS in the farmer's language. Sent as a background task after
-    # the application is already persisted, so SMS never blocks or fails the
-    # loan application (see _sms_background / AfricasTalkingClient.send_sms).
-    sms_text = t(lang, "sms_confirm").format(
-        product=PRODUCT_NAME,
-        ref=reference,
-        items=display_labels,
-        amount=f"{int(amount):,}",
-    )
-    return end(body, background=_sms_background(sms_client, phone, sms_text))
+    sms_text = ""
+    if get_settings().sms_enabled:
+        sms_text = t(lang, "sms_confirm").format(
+            product=PRODUCT_NAME,
+            ref=reference,
+            items=display_labels,
+            amount=f"{int(amount):,}",
+        )
+    background = BackgroundTask(_finalize_submission, saved, phone, sms_text, sms_client)
+    return end(body, background=background)
 
 
-def _create_loan_application(
+def _save_loan_application(
     phone: str, lang: str, categories: list[str], amount: float
-) -> str:
-    """Create a new loan application in the existing module via the store service.
-
-    Generates a unique reference (used as the application id), retrying on the
-    (vanishingly rare) chance of a collision. Runs in a threadpool (blocking
-    SQLite). A new application is created every time — never an update."""
+) -> dict:
+    """Persist a new loan application to the local store (fast SQLite write) and
+    return the saved record (reference + payloads) for the background Neo4j
+    mirror. A new application is created every time — never an update."""
     language_name = LANGUAGE_NAMES.get(lang, lang)
-    saved = None
     for _ in range(5):
-        reference = _new_reference()
         try:
-            saved = store.save_loan_application(
-                reference=reference,
+            return store.save_loan_application(
+                reference=_new_reference(),
                 phone=phone,
                 amount=amount,
                 categories=categories,
@@ -363,22 +354,35 @@ def _create_loan_application(
                 source="USSD",
                 status=_DEFAULT_STATUS,
             )
-            break
         except sqlite3.IntegrityError:  # duplicate reference — regenerate
             continue
-    if saved is None:
-        # Exhausted short references — fall back to a full-length unique reference.
-        saved = store.save_loan_application(
-            reference="RF-" + uuid.uuid4().hex.upper(),
-            phone=phone,
-            amount=amount,
-            categories=categories,
-            language=language_name,
-            source="USSD",
-            status=_DEFAULT_STATUS,
-        )
-    _mirror_to_graph(saved)
-    return saved["reference"]
+    # Exhausted short references — fall back to a full-length unique reference.
+    return store.save_loan_application(
+        reference="RF-" + uuid.uuid4().hex.upper(),
+        phone=phone,
+        amount=amount,
+        categories=categories,
+        language=language_name,
+        source="USSD",
+        status=_DEFAULT_STATUS,
+    )
+
+
+async def _finalize_submission(
+    saved: dict, phone: str, sms_text: str, sms_client: AfricasTalkingClient
+) -> None:
+    """Runs AFTER the USSD response is sent: mirror the application into Neo4j and
+    send the confirmation SMS. Both are best-effort and never affect the farmer's
+    on-screen result."""
+    try:
+        await run_in_threadpool(_mirror_to_graph, saved)
+    except Exception as exc:  # pragma: no cover - network/dep failures
+        print(f"[ussd] graph mirror failed (non-fatal): {exc}")
+    if sms_text:
+        try:
+            await sms_client.send_sms(phone, sms_text)
+        except Exception as exc:  # pragma: no cover - the client already swallows errors
+            print(f"[ussd] confirmation SMS failed (non-fatal): {exc}")
 
 
 def _mirror_to_graph(saved: dict) -> None:
