@@ -18,6 +18,10 @@ it, and **how** it works in the solution — per the tech-partner bounty criteri
 - The dashboard's Applications, AI Assessments, Farmer Profiles and Overview KPIs
   are served by **Cypher queries** — API responses carry `"source": "neo4j"`.
 - The Knowledge Graph explorer page.
+- **GraphRAG "Ask KilimoLens" assistant** — a Vector + Cypher retriever: each
+  Assessment node carries a vector embedding; a question is embedded, semantically
+  matched against a Neo4j **vector index**, and the matches are enriched by graph
+  traversal (cooperative, SACCO, county, crops) before the LLM answers.
 
 **Why**
 Credit risk at the last mile is fundamentally a **network** problem. Smallholders
@@ -31,11 +35,14 @@ relationships natively, and lets us derive trust signals that a tabular DB canno
   `(:Farmer)-[:MEMBER_OF]->(:Cooperative)`, `-[:SAVES_WITH]->(:Sacco)`,
   `-[:LOCATED_IN]->(:County)`, `-[:GROWS]->(:Crop)`, `-[:HAS_ASSESSMENT]->(:Assessment)`.
 - On every `/assess`, the farmer and relationships are `MERGE`d and a full
-  `Assessment` node is written.
+  `Assessment` node is written and **embedded** into a Neo4j vector index.
 - `cooperativeNetworkStrength` / `peerRepaymentScore` are computed by traversing
   to co-members and guarantors and averaging their repayment standing — these feed
   directly into the XGBoost credit-readiness score.
-- Code: `backend/app/graph/` (`client.py`, `repository.py`).
+- GraphRAG retrieval: `db.index.vector.queryNodes(...)` for semantic search, then
+  `MATCH` traversal for connected context (the Vector + Cypher pattern from the
+  Neo4j GenAI workshop).
+- Code: `backend/app/graph/` (`client.py`, `repository.py`, `assistant.py`).
 
 ---
 
@@ -84,13 +91,25 @@ could go into the AI/data layer rather than UI scaffolding.
 
 ---
 
-## ⚪ Masumi — evaluated, intentionally not forced
+## 🟠 Masumi — two independent, monetised AI agents
 
-We reviewed Masumi (decentralised agent payments / identity). For an internal
-lender credit-scoring tool it did not have a *meaningful* role in this build, and
-the bounty rules explicitly warn against bolting a tool on "just so it appears."
-A future fit: settling micro-payments to field agents/verifiers or issuing
-verifiable farmer credit credentials — noted as a roadmap item, not claimed here.
+**Where** — `masumi-agents/` (two standalone services, NOT part of KilimoLens):
+- **Farmer Trust Agent** — sells a portable, explainable Farmer Trust Report.
+- **Cooperative Intelligence Agent** — sells a Cooperative Reputation Report.
+
+**Why** — Today every lender re-verifies the same farmer/cooperative from zero.
+Masumi lets that work be done once and **sold on demand** between agents. These are
+genuinely independent services any lender can discover and hire — KilimoLens is
+just one consumer. This is a real agent-economy use case, not a bolt-on.
+
+**How** — Each agent implements the **MIP-003 Agentic Service API**
+(`/availability`, `/input_schema`, `/start_job`, `/status`, `/provide_input`) and
+integrates the **Masumi Payment Service** (via the `masumi` SDK): a job only runs
+after on-chain payment is confirmed, then the result hash settles the escrow.
+Every job keeps an audit trail. Reports are explainable (Gemini) and draw on the
+Neo4j knowledge graph. A mock payment provider lets the full flow run offline for
+demos. See `masumi-agents/README.md` for architecture, sequence diagram and tested
+example requests/responses.
 
 ---
 

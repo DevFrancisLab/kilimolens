@@ -192,6 +192,42 @@ export async function getFarmer(farmerId: string): Promise<FarmerDetail> {
   return res.json();
 }
 
+export type AssistantMatch = {
+  score: number;
+  farmerId: string;
+  farmer: string;
+  readiness: number;
+  confidence: number;
+  recommendation: string;
+  status: string;
+  loanAmount: number;
+  purpose: string;
+  county: string;
+  cooperative: string | null;
+  sacco: string | null;
+  crops: string[];
+};
+
+export type AssistantResponse = {
+  question: string;
+  answer: string;
+  matches: AssistantMatch[];
+  retriever?: string;
+  error?: string | null;
+};
+
+/** GraphRAG: ask a natural-language question answered by Vector + Cypher
+ *  retrieval over the Neo4j knowledge graph. */
+export async function askAssistant(question: string): Promise<AssistantResponse> {
+  const res = await fetch(`${API_BASE}/assistant/ask`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question }),
+  });
+  if (!res.ok) throw new Error(`Assistant failed: ${res.status}`);
+  return res.json();
+}
+
 export async function getClimate(params: {
   gps?: string;
   county?: string;

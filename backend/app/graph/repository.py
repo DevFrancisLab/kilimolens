@@ -147,6 +147,21 @@ class GraphRepository:
             resJson=json.dumps(result),
         )
 
+        # Embed the assessment for Vector + Cypher GraphRAG (best-effort).
+        try:
+            from app.graph import assistant
+
+            summary = {
+                "farmerName": personal.get("fullName") or "Unknown Farmer",
+                "county": (personal.get("county") or farm.get("county") or "").strip(),
+                "loanAmount": _to_float(personal.get("loanAmountRequested")),
+                "purpose": personal.get("purposeOfLoan") or "",
+                "status": meta["status"],
+            }
+            assistant.embed_assessment(meta["id"], assistant.assessment_text(result, summary))
+        except Exception as exc:  # never block scoring
+            print(f"[repository] embedding skipped: {exc}")
+
     # ── dashboard reads (Neo4j as system of record) ─────────────────────────
     @staticmethod
     def _summary_from_node(a: dict[str, Any]) -> dict[str, Any]:

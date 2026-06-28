@@ -19,6 +19,7 @@ import { Route as DashboardNewAssessmentRouteImport } from './routes/dashboard/n
 import { Route as DashboardKnowledgeGraphRouteImport } from './routes/dashboard/knowledge-graph'
 import { Route as DashboardFarmerProfilesRouteImport } from './routes/dashboard/farmer-profiles'
 import { Route as DashboardClimateInsightsRouteImport } from './routes/dashboard/climate-insights'
+import { Route as DashboardAssistantRouteImport } from './routes/dashboard/assistant'
 import { Route as DashboardApplicationsRouteImport } from './routes/dashboard/applications'
 import { Route as DashboardAiAssessmentsRouteImport } from './routes/dashboard/ai-assessments'
 
@@ -73,6 +74,11 @@ const DashboardClimateInsightsRoute =
     path: '/dashboard/climate-insights',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DashboardAssistantRoute = DashboardAssistantRouteImport.update({
+  id: '/dashboard/assistant',
+  path: '/dashboard/assistant',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardApplicationsRoute = DashboardApplicationsRouteImport.update({
   id: '/dashboard/applications',
   path: '/dashboard/applications',
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/dashboard/ai-assessments': typeof DashboardAiAssessmentsRoute
   '/dashboard/applications': typeof DashboardApplicationsRoute
+  '/dashboard/assistant': typeof DashboardAssistantRoute
   '/dashboard/climate-insights': typeof DashboardClimateInsightsRoute
   '/dashboard/farmer-profiles': typeof DashboardFarmerProfilesRoute
   '/dashboard/knowledge-graph': typeof DashboardKnowledgeGraphRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/dashboard/ai-assessments': typeof DashboardAiAssessmentsRoute
   '/dashboard/applications': typeof DashboardApplicationsRoute
+  '/dashboard/assistant': typeof DashboardAssistantRoute
   '/dashboard/climate-insights': typeof DashboardClimateInsightsRoute
   '/dashboard/farmer-profiles': typeof DashboardFarmerProfilesRoute
   '/dashboard/knowledge-graph': typeof DashboardKnowledgeGraphRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/dashboard/ai-assessments': typeof DashboardAiAssessmentsRoute
   '/dashboard/applications': typeof DashboardApplicationsRoute
+  '/dashboard/assistant': typeof DashboardAssistantRoute
   '/dashboard/climate-insights': typeof DashboardClimateInsightsRoute
   '/dashboard/farmer-profiles': typeof DashboardFarmerProfilesRoute
   '/dashboard/knowledge-graph': typeof DashboardKnowledgeGraphRoute
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/ai-assessments'
     | '/dashboard/applications'
+    | '/dashboard/assistant'
     | '/dashboard/climate-insights'
     | '/dashboard/farmer-profiles'
     | '/dashboard/knowledge-graph'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/ai-assessments'
     | '/dashboard/applications'
+    | '/dashboard/assistant'
     | '/dashboard/climate-insights'
     | '/dashboard/farmer-profiles'
     | '/dashboard/knowledge-graph'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/dashboard/ai-assessments'
     | '/dashboard/applications'
+    | '/dashboard/assistant'
     | '/dashboard/climate-insights'
     | '/dashboard/farmer-profiles'
     | '/dashboard/knowledge-graph'
@@ -178,6 +190,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   DashboardAiAssessmentsRoute: typeof DashboardAiAssessmentsRoute
   DashboardApplicationsRoute: typeof DashboardApplicationsRoute
+  DashboardAssistantRoute: typeof DashboardAssistantRoute
   DashboardClimateInsightsRoute: typeof DashboardClimateInsightsRoute
   DashboardFarmerProfilesRoute: typeof DashboardFarmerProfilesRoute
   DashboardKnowledgeGraphRoute: typeof DashboardKnowledgeGraphRoute
@@ -259,6 +272,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardClimateInsightsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/assistant': {
+      id: '/dashboard/assistant'
+      path: '/dashboard/assistant'
+      fullPath: '/dashboard/assistant'
+      preLoaderRoute: typeof DashboardAssistantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/applications': {
       id: '/dashboard/applications'
       path: '/dashboard/applications'
@@ -282,6 +302,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   DashboardAiAssessmentsRoute: DashboardAiAssessmentsRoute,
   DashboardApplicationsRoute: DashboardApplicationsRoute,
+  DashboardAssistantRoute: DashboardAssistantRoute,
   DashboardClimateInsightsRoute: DashboardClimateInsightsRoute,
   DashboardFarmerProfilesRoute: DashboardFarmerProfilesRoute,
   DashboardKnowledgeGraphRoute: DashboardKnowledgeGraphRoute,
