@@ -59,6 +59,15 @@ class NotifyRequest(BaseModel):
     language: Optional[str] = None  # "en" | "sw"
 
 
+class LoanDecisionRequest(BaseModel):
+    """Loan officer's approve/decline decision on an application."""
+
+    decision: str  # "Approved" | "Declined"
+    approvedAmount: Optional[float] = None  # approved amount (may differ from requested)
+    note: str = ""
+    language: Optional[str] = None  # override farmer language ("en" | "sw")
+
+
 class SmsResult(BaseModel):
     """Outcome of an outbound SMS send."""
 

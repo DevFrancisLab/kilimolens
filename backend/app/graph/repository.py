@@ -233,6 +233,23 @@ class GraphRepository:
             "result": json.loads(a.get("resultJson") or "{}"),
         }
 
+    def update_status(self, assessment_id: str, *, status: str, result_json: str) -> bool:
+        """Light update of an Assessment node's status + resultJson (e.g. a loan
+        officer's approve/decline decision). Returns True if a node was updated."""
+        if not self.enabled:
+            return False
+        rows = self.client.run(
+            """
+            MATCH (a:Assessment {id:$aid})
+            SET a.status = $status, a.resultJson = $res, a.updatedAt = timestamp()
+            RETURN a.id AS id
+            """,
+            aid=assessment_id,
+            status=status,
+            res=result_json,
+        )
+        return bool(rows)
+
     def update_assessment(
         self,
         assessment_id: str,

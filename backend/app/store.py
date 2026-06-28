@@ -236,6 +236,25 @@ def update_application(
     return {"id": application_id, "createdAt": created, "status": status}
 
 
+def update_application_status(
+    application_id: str, *, status: str, result_json: str
+) -> Optional[dict[str, Any]]:
+    """Light update of an application's status and result JSON only (e.g. a loan
+    officer recording an approve/decline decision — no re-scoring). Returns None
+    if the application is not in the SQLite mirror."""
+    with _LOCK, _connect() as conn:
+        row = conn.execute(
+            "SELECT created_at FROM assessments WHERE id = ?", (application_id,)
+        ).fetchone()
+        if not row:
+            return None
+        conn.execute(
+            "UPDATE assessments SET status = ?, result_json = ? WHERE id = ?",
+            (status, result_json, application_id),
+        )
+    return {"id": application_id, "status": status, "createdAt": row["created_at"]}
+
+
 def _summary(r: sqlite3.Row) -> dict[str, Any]:
     return {
         "id": r["id"],

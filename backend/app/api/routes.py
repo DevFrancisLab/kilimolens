@@ -9,7 +9,7 @@ SQLite store, so the whole product is backed by real data.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from app import store
@@ -19,7 +19,10 @@ from app.graph import assistant
 from app.graph.repository import GraphRepository
 from app.ml.scorer import CreditScorer
 from app.schemas import AssessmentRequest, AssessmentResponse
+from app.schemas.messaging import LoanDecisionRequest
+from app.services.africas_talking import AfricasTalkingClient, get_sms_client
 from app.services.assessment_service import complete_application, run_assessment
+from app.services.decision_service import VALID_DECISIONS, record_loan_decision
 
 router = APIRouter()
 
@@ -59,6 +62,30 @@ def complete_loan_application(reference: str, request: AssessmentRequest) -> Ass
     if response is None:
         raise HTTPException(status_code=404, detail="Application not found")
     return response
+
+
+@router.post("/applications/{reference}/decision")
+async def decide_loan_application(
+    reference: str,
+    request: LoanDecisionRequest,
+    sms_client: AfricasTalkingClient = Depends(get_sms_client),
+) -> dict:
+    """Record a loan officer's approve/decline decision and SMS the farmer the
+    decision, the reasons behind it, metric-based guidance to improve/maintain
+    their score, and an invitation to keep chatting via the advisory SMS."""
+    if request.decision not in VALID_DECISIONS:
+        raise HTTPException(status_code=400, detail="decision must be 'Approved' or 'Declined'")
+    result = await record_loan_decision(
+        reference,
+        request.decision,
+        request.approvedAmount,
+        request.note,
+        request.language,
+        sms_client,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Application not found")
+    return result
 
 
 # ── Dashboard data endpoints ─────────────────────────────────────────────────
