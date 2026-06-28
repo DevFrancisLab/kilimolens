@@ -13,7 +13,7 @@ from app.crud import messaging as messaging_db
 from app.graph.client import GraphClient
 from app.ml.scorer import CreditScorer
 from app.repositories import advisory_repository
-from app.routers import advisory_router, ocr_router, sms_router, ussd_router
+from app.routers import advisory_router, extraction_router, ocr_router, sms_router, ussd_router
 
 
 @asynccontextmanager
@@ -51,6 +51,8 @@ def create_app() -> FastAPI:
     app.include_router(ocr_router, prefix="/api")
     # AI Advisory — inbound SMS webhook at POST /api/advisory/sms/webhook
     app.include_router(advisory_router, prefix="/api")
+    # AI form-fill extraction — POST /api/extract/form (wizard assistant)
+    app.include_router(extraction_router, prefix="/api")
 
     @app.get("/")
     def root() -> dict:

@@ -228,6 +228,35 @@ export async function askAssistant(question: string): Promise<AssistantResponse>
   return res.json();
 }
 
+export type ExtractResult = {
+  section: string;
+  fields: Record<string, string>;
+  filledCount: number;
+};
+
+/** AI form-fill: extract a wizard section's fields from pasted text and/or a
+ *  file (PDF / image / Excel / CSV / JSON / text). */
+export async function extractForm(
+  section: "personal" | "farm",
+  opts: { text?: string; file?: File },
+): Promise<ExtractResult> {
+  const fd = new FormData();
+  fd.append("section", section);
+  if (opts.text) fd.append("text", opts.text);
+  if (opts.file) fd.append("file", opts.file);
+  const res = await fetch(`${API_BASE}/extract/form`, { method: "POST", body: fd });
+  if (!res.ok) {
+    let detail = `Extraction failed: ${res.status}`;
+    try {
+      detail = (await res.json()).detail || detail;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
 export async function getClimate(params: {
   gps?: string;
   county?: string;

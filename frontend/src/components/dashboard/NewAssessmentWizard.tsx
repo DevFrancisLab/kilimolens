@@ -22,6 +22,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { assessFarmer, completeApplication, getAssessment, type AssessmentResult } from "@/lib/api";
+import AiFillPanel from "@/components/dashboard/AiFillPanel";
 
 const STEPS = [
   "Personal Information",
@@ -201,6 +202,9 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
   const [processingProgress, setProcessingProgress] = useState<number>(0);
   const [finalDecision, setFinalDecision] = useState<string>('Further Review');
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>({});
+  // Source text the loan officer pastes for the AI form-fill assistant; shared
+  // across the Personal and Farm steps so they only paste once.
+  const [aiSourceText, setAiSourceText] = useState<string>("");
   const [apiResult, setApiResult] = useState<AssessmentResult | null>(null);
   const [apiError, setApiError] = useState<string>("");
   const [showExplanation, setShowExplanation] = useState(false);
@@ -509,6 +513,13 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
         </CardHeader>
         <CardContent>
           {step === 0 && (
+            <>
+            <AiFillPanel
+              section="personal"
+              text={aiSourceText}
+              onTextChange={setAiSourceText}
+              onFilled={(f) => update("personal", f as any)}
+            />
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label className="text-sm text-muted-foreground">Full name</label>
@@ -619,10 +630,17 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
                 {errors["personal.purposeOfLoan"] && <div className="mt-1 text-sm text-destructive">{errors["personal.purposeOfLoan"]}</div>}
               </div>
             </div>
+            </>
           )}
 
           {step === 1 && (
             <div className="space-y-4">
+              <AiFillPanel
+                section="farm"
+                text={aiSourceText}
+                onTextChange={setAiSourceText}
+                onFilled={(f) => update("farm", f as any)}
+              />
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="rounded-lg border border-border bg-card p-4">
                   <div className="flex items-center gap-3">
