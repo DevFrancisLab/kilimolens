@@ -237,7 +237,7 @@ export type ExtractResult = {
 /** AI form-fill: extract a wizard section's fields from pasted text and/or a
  *  file (PDF / image / Excel / CSV / JSON / text). */
 export async function extractForm(
-  section: "personal" | "farm" | "finance",
+  section: "personal" | "farm" | "finance" | "community" | "climate",
   opts: { text?: string; file?: File },
 ): Promise<ExtractResult> {
   const fd = new FormData();

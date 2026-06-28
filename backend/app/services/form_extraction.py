@@ -69,6 +69,29 @@ FIELD_SCHEMAS: dict[str, dict[str, str]] = {
         "alternativeIncomeSources": "Other income sources (e.g. casual labour, trading)",
         "existingDebts": "Other existing debts (description)",
     },
+    "community": {
+        "cooperative": "Is the farmer a member of a cooperative? One of: Yes, No",
+        "cooperativeMembership": "Name of the cooperative",
+        "selectedSacco": "Name of the SACCO the farmer saves with",
+        "yearsInSacco": "Years as a SACCO member (number as string)",
+        "peerGuarantees": "Number of peer guarantors (number as string)",
+        "farmerGroup": "Farmer group or association name",
+        "extensionOfficer": "Extension officer name or contact",
+        "climateTraining": "Climate-smart training attended (Yes/No or description)",
+        "verifier": "Name of the person verifying the farmer",
+        "verificationMethod": "How the farmer was verified (e.g. Field visit, Phone call)",
+    },
+    "climate": {
+        "cropDiversification": "One of: Low, Moderate, High",
+        "droughtResistantCrops": "One of: None, Some, Majority",
+        "waterHarvesting": "One of: None, Rainwater harvesting, Ponds/Storage, Ridges/Contour",
+        "soilConservation": "One of: None, Mulching, Terracing, Contour farming",
+        "livelihoodDiversification": "One of: None, Small trade, Livestock, Casual labor, Other",
+        "irrigation": "One of: Rainfed, Irrigated, Mixed",
+        "climateSmartTraining": "One of: None, Some, Comprehensive",
+        "fertilizerUse": "One of: None, Low, Moderate, High",
+        "plantingPractice": "Planting practice description (e.g. Mono-crop, intercropping, rotation)",
+    },
 }
 
 

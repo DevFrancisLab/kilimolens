@@ -5,7 +5,7 @@ import { Sparkles, Paperclip, Loader2, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { extractForm } from "@/lib/api";
 
-type Section = "personal" | "farm" | "finance";
+type Section = "personal" | "farm" | "finance" | "community" | "climate";
 
 type Props = {
   section: Section;
@@ -20,12 +20,16 @@ const TITLES: Record<Section, string> = {
   personal: "AI assistant — fill Personal Information",
   farm: "AI assistant — fill Farm Information",
   finance: "AI assistant — fill Financial Behaviour",
+  community: "AI assistant — fill Community & Verification",
+  climate: "AI assistant — fill Climate & Farming Practices",
 };
 
 const BUTTON_LABELS: Record<Section, string> = {
   personal: "Extract & fill personal info",
   farm: "Extract & fill farm info",
   finance: "Extract & fill financial info",
+  community: "Extract & fill community info",
+  climate: "Extract & fill climate info",
 };
 
 export default function AiFillPanel({ section, text, onTextChange, onFilled }: Props) {

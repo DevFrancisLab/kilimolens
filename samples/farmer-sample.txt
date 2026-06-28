@@ -1,7 +1,7 @@
-Farmer: John Otieno Omondi, National ID 27654398, phone +254733551200.
-He is a 45-year-old male from Kogelo village, Nyang'oma ward, Rarieda sub-county,
-Siaya county. GPS -0.1023, 34.2588. He is requesting a loan of KES 75,000 to buy
-hybrid maize seed, fertiliser and a water pump for irrigation.
+Farmer: John Otieno Omondi, National ID 27654398, phone +254733551200. He is a
+45-year-old male from Kogelo village, Nyang'oma ward, Rarieda sub-county, Siaya
+county. GPS -0.1023, 34.2588. He is requesting a loan of KES 75,000 to buy hybrid
+maize seed, fertiliser and a water pump for irrigation.
 
 Farm: Lake View Shamba, located in Siaya, about 3 hectares. Main crops are maize
 and sorghum, with groundnuts and sweet potatoes as secondary crops. He keeps 6
@@ -9,3 +9,21 @@ goats and 2 dairy cattle. He has been farming for 20 years and uses irrigated
 farming near the lake. Last season he harvested roughly 2,400 kg and expects about
 3,000 kg this season. Input purchases last season were around KES 18,000 for seed
 and fertiliser.
+
+Financial behaviour: He previously took a KES 30,000 loan from a SACCO and repaid
+it on time, so his repayment history is good. He has an outstanding balance of KES
+10,000. Savings are about KES 22,000 and his average monthly income is around KES
+19,000. He uses mobile money regularly (medium activity). He also earns from fishing
+and casual labour. No other debts.
+
+Community & verification: He is a member of the Rarieda Fish & Farm Cooperative and
+saves with Siaya Teachers SACCO, where he has been a member for 4 years. He has 2
+peer guarantors and belongs to the Kogelo Youth Farmers Group. His extension officer
+is Peter Owino. He attended a climate-smart farming training. Verified by loan
+officer Janet Adhiambo through a field visit.
+
+Climate & farming practices: He practices moderate crop diversification, grows some
+drought-resistant varieties, harvests rainwater, uses contour farming for soil
+conservation, and has fishing as an alternative livelihood. He uses irrigated
+farming, has had some climate-smart training, applies moderate fertiliser, and
+practices intercropping.

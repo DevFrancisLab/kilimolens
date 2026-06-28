@@ -1,5 +1,5 @@
 {
-  "farmer": {
+  "personal": {
     "full_name": "Mary Wambui Kariuki",
     "national_id": "31948275",
     "phone": "0722814596",
@@ -25,5 +25,38 @@
     "previous_harvest_kg": 9800,
     "expected_harvest_kg": 13500,
     "input_purchases": "DAP & CAN fertiliser ~KES 35,000; certified seed ~KES 22,000; agrochemicals ~KES 8,000"
+  },
+  "financial_behaviour": {
+    "previous_loans": "Njoro SACCO input loan KES 20,000 in 2024 (repaid in full)",
+    "repayment_history": "Good",
+    "outstanding_loans_kes": 15000,
+    "savings_kes": 45000,
+    "average_monthly_income_kes": 28000,
+    "mobile_money_activity": "High",
+    "alternative_income_sources": "Sells milk daily; runs a small farm-input kiosk",
+    "existing_debts": "None"
+  },
+  "community_verification": {
+    "is_cooperative_member": "Yes",
+    "cooperative_name": "Mau Narok Farmers Cooperative",
+    "sacco_name": "Njoro SACCO",
+    "years_in_sacco": 6,
+    "peer_guarantors": 3,
+    "farmer_group": "Likia Women Farmers Group",
+    "extension_officer": "James Kimani (0720-112233)",
+    "climate_training_attended": "Yes",
+    "verified_by": "Grace Achieng (field officer)",
+    "verification_method": "Field visit"
+  },
+  "climate_practices": {
+    "crop_diversification": "High",
+    "drought_resistant_crops": "Majority",
+    "water_harvesting": "Ponds/Storage",
+    "soil_conservation": "Terracing",
+    "livelihood_diversification": "Livestock",
+    "irrigation": "Mixed",
+    "climate_smart_training": "Comprehensive",
+    "fertilizer_use": "Moderate",
+    "planting_practice": "Intercropping with crop rotation"
   }
 }

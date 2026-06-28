@@ -928,31 +928,74 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
           )}
 
           {step === 3 && (
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="text-sm text-muted-foreground">Member of cooperative?</label>
-                <Select value={data.community.cooperative} onValueChange={(v) => update("community", { cooperative: v })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Yes">Yes</SelectItem>
-                    <SelectItem value="No">No</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm text-muted-foreground">Verifier name</label>
-                <Input value={data.community.verifier} onChange={(e) => update("community", { verifier: e.target.value })} />
-              </div>
-              <div className="md:col-span-2">
-                <label className="text-sm text-muted-foreground">Verification method</label>
-                <Input value={data.community.verificationMethod} onChange={(e) => update("community", { verificationMethod: e.target.value })} />
+            <div className="space-y-4">
+              <AiFillPanel
+                section="community"
+                text={aiSourceText}
+                onTextChange={setAiSourceText}
+                onFilled={(f) => update("community", f as any)}
+              />
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="text-sm text-muted-foreground">Member of cooperative?</label>
+                  <Select value={data.community.cooperative} onValueChange={(v) => update("community", { cooperative: v })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Yes">Yes</SelectItem>
+                      <SelectItem value="No">No</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Cooperative name</label>
+                  <Input value={data.community.cooperativeMembership} onChange={(e) => update("community", { cooperativeMembership: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">SACCO name</label>
+                  <Input value={data.community.selectedSacco} onChange={(e) => update("community", { selectedSacco: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Years in SACCO</label>
+                  <Input value={data.community.yearsInSacco} onChange={(e) => update("community", { yearsInSacco: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Peer guarantors (number)</label>
+                  <Input value={data.community.peerGuarantees} onChange={(e) => update("community", { peerGuarantees: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Farmer group</label>
+                  <Input value={data.community.farmerGroup} onChange={(e) => update("community", { farmerGroup: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Extension officer</label>
+                  <Input value={data.community.extensionOfficer} onChange={(e) => update("community", { extensionOfficer: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Climate training</label>
+                  <Input value={data.community.climateTraining} onChange={(e) => update("community", { climateTraining: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Verifier name</label>
+                  <Input value={data.community.verifier} onChange={(e) => update("community", { verifier: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-sm text-muted-foreground">Verification method</label>
+                  <Input value={data.community.verificationMethod} onChange={(e) => update("community", { verificationMethod: e.target.value })} />
+                </div>
               </div>
             </div>
           )}
 
           {step === 4 && (
+            <div className="space-y-4">
+            <AiFillPanel
+              section="climate"
+              text={aiSourceText}
+              onTextChange={setAiSourceText}
+              onFilled={(f) => update("climate", f as any)}
+            />
             <div className="grid gap-4 md:grid-cols-3">
               <div className="md:col-span-2 space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
@@ -1078,6 +1121,7 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
                   <li className="flex items-start gap-2"><Layers className="h-4 w-4 text-amber-600" />Soil conservation maintains productivity.</li>
                 </ul>
               </aside>
+            </div>
             </div>
           )}
 
