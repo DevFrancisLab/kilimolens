@@ -1,0 +1,29 @@
+{
+  "farmer": {
+    "full_name": "Mary Wambui Kariuki",
+    "national_id": "31948275",
+    "phone": "0722814596",
+    "gender": "Female",
+    "age": 38,
+    "county": "Nakuru",
+    "sub_county": "Njoro",
+    "ward": "Mau Narok",
+    "village": "Likia",
+    "gps": "-0.4521, 35.9501",
+    "loan_amount_kes": 120000,
+    "loan_purpose": "Buy certified potato seed, fertiliser and hire a tractor for land prep"
+  },
+  "farm": {
+    "farm_name": "Likia Highlands Farm",
+    "county": "Nakuru",
+    "size_hectares": 4.2,
+    "main_crops": "Potatoes, Maize",
+    "secondary_crops": "Cabbages, Peas",
+    "livestock": "dairy cows: 4, sheep: 12, chicken: 30",
+    "years_farming": 15,
+    "irrigation": "Mixed",
+    "previous_harvest_kg": 9800,
+    "expected_harvest_kg": 13500,
+    "input_purchases": "DAP & CAN fertiliser ~KES 35,000; certified seed ~KES 22,000; agrochemicals ~KES 8,000"
+  }
+}
