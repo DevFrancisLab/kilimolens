@@ -54,15 +54,15 @@ class AfricasTalkingClient:
             return self._record(recipient, body, "skipped", detail="AT_API_KEY not configured")
 
         data = {
-            "username": self.settings.at_username,
+            "username": self.settings.at_active_username,
             "to": recipient,
             "message": body,
         }
-        if self.settings.at_sender_id.strip():
-            data["from"] = self.settings.at_sender_id.strip()
+        if self.settings.at_active_sender_id:
+            data["from"] = self.settings.at_active_sender_id
 
         headers = {
-            "apiKey": self.settings.at_api_key,
+            "apiKey": self.settings.at_active_api_key,
             "Accept": "application/json",
             "Content-Type": "application/x-www-form-urlencoded",
         }

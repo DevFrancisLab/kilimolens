@@ -37,12 +37,19 @@ services:
       - key: GEMINI_MODEL
         value: gemini-2.5-flash
 
-      # ── Africa's Talking (USSD + SMS). Blank AT_API_KEY => SMS disabled. ──
+      # ── Africa's Talking (USSD + SMS). AT_ENVIRONMENT picks sandbox vs live;
+      #    set it to "live" in production. Blank active API key => SMS disabled. ──
+      - key: AT_ENVIRONMENT
+        value: live
       - key: AT_USERNAME
         sync: false
       - key: AT_API_KEY
         sync: false
       - key: AT_SENDER_ID
+        sync: false
+      - key: AT_SANDBOX_API_KEY
+        sync: false
+      - key: AT_SANDBOX_SENDER_ID
         sync: false
       - key: AT_USSD_DEFAULT_LANGUAGE
         value: en

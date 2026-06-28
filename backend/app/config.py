@@ -26,12 +26,18 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-2.5-flash"
     gemini_embedding_model: str = "gemini-embedding-001"  # 3072-dim, for Vector+Cypher GraphRAG
 
-    # Africa's Talking (USSD + SMS). Read from the environment / .env — never
-    # hardcode credentials. Leave AT_API_KEY blank to run with SMS disabled
-    # (the API still works; outbound SMS is skipped and logged).
-    at_username: str = "sandbox"
-    at_api_key: str = ""
+    # Africa's Talking (USSD + SMS). Keep BOTH sandbox and live credentials; the
+    # AT_ENVIRONMENT switch selects which set is active. Never hardcode secrets —
+    # read from the environment / .env. Leave the active API key blank to run with
+    # SMS disabled (the API still works; outbound SMS is skipped and logged).
+    at_environment: str = "live"  # "sandbox" | "live"
+    # Live / production credentials (used when AT_ENVIRONMENT=live):
+    at_username: str = ""  # live AT username
+    at_api_key: str = ""  # live API key
     at_sender_id: str = ""  # registered shortcode or alphanumeric sender id
+    # Sandbox credentials (used when AT_ENVIRONMENT=sandbox; username is "sandbox"):
+    at_sandbox_api_key: str = ""
+    at_sandbox_sender_id: str = ""  # sandbox shortcode / alphanumeric sender id
     at_ussd_default_language: str = "en"  # "en" | "sw"
 
     # Optional shared secret guarding the internal "notify" SMS endpoint.
@@ -49,11 +55,25 @@ class Settings(BaseSettings):
     # ── Africa's Talking helpers ────────────────────────────────────────────
     @property
     def at_is_sandbox(self) -> bool:
-        return self.at_username.strip().lower() == "sandbox"
+        return self.at_environment.strip().lower() == "sandbox"
+
+    @property
+    def at_active_username(self) -> str:
+        """The username for the selected environment (sandbox is always 'sandbox')."""
+        return "sandbox" if self.at_is_sandbox else self.at_username.strip()
+
+    @property
+    def at_active_api_key(self) -> str:
+        return (self.at_sandbox_api_key if self.at_is_sandbox else self.at_api_key).strip()
+
+    @property
+    def at_active_sender_id(self) -> str:
+        """Registered sender id for the selected environment."""
+        return (self.at_sandbox_sender_id if self.at_is_sandbox else self.at_sender_id).strip()
 
     @property
     def sms_enabled(self) -> bool:
-        return bool(self.at_api_key.strip() and self.at_username.strip())
+        return bool(self.at_active_api_key and self.at_active_username)
 
     @property
     def at_sms_url(self) -> str:
