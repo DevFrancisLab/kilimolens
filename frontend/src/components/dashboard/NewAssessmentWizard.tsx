@@ -781,6 +781,12 @@ export default function NewAssessmentWizard({ applicationId }: { applicationId?:
 
           {step === 2 && (
             <div className="space-y-4">
+              <AiFillPanel
+                section="finance"
+                text={aiSourceText}
+                onTextChange={setAiSourceText}
+                onFilled={(f) => update("finance", f as any)}
+              />
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <div className="flex items-center gap-2">

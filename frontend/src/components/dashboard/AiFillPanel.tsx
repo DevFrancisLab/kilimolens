@@ -5,8 +5,10 @@ import { Sparkles, Paperclip, Loader2, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { extractForm } from "@/lib/api";
 
+type Section = "personal" | "farm" | "finance";
+
 type Props = {
-  section: "personal" | "farm";
+  section: Section;
   /** Shared source text across steps so the officer can paste once. */
   text: string;
   onTextChange: (t: string) => void;
@@ -14,9 +16,16 @@ type Props = {
   onFilled: (fields: Record<string, string>) => void;
 };
 
-const TITLES = {
+const TITLES: Record<Section, string> = {
   personal: "AI assistant — fill Personal Information",
   farm: "AI assistant — fill Farm Information",
+  finance: "AI assistant — fill Financial Behaviour",
+};
+
+const BUTTON_LABELS: Record<Section, string> = {
+  personal: "Extract & fill personal info",
+  farm: "Extract & fill farm info",
+  finance: "Extract & fill financial info",
 };
 
 export default function AiFillPanel({ section, text, onTextChange, onFilled }: Props) {
@@ -79,7 +88,7 @@ export default function AiFillPanel({ section, text, onTextChange, onFilled }: P
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <Button type="button" onClick={run} disabled={busy} size="sm">
           {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Sparkles className="mr-1 h-4 w-4" />}
-          {section === "personal" ? "Extract & fill personal info" : "Extract & fill farm info"}
+          {BUTTON_LABELS[section]}
         </Button>
 
         <button

@@ -59,6 +59,16 @@ FIELD_SCHEMAS: dict[str, dict[str, str]] = {
         "expectedHarvest": "Expected harvest in kg (digits only)",
         "inputPurchases": "Input purchases (fertiliser/seed/agrochemicals) and est. cost",
     },
+    "finance": {
+        "previousLoans": "Previous loans taken (lender and amount, e.g. 'Loan A: KES 20,000 (paid)')",
+        "repaymentHistory": "One of: Good, Fair, Poor",
+        "outstandingLoans": "Outstanding loan balance in KES (digits only)",
+        "savings": "Total savings in KES (digits only)",
+        "averageMonthlyIncome": "Average monthly income in KES (digits only)",
+        "mobileMoneyActivity": "One of: High, Medium, Low",
+        "alternativeIncomeSources": "Other income sources (e.g. casual labour, trading)",
+        "existingDebts": "Other existing debts (description)",
+    },
 }
 
 
