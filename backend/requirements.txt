@@ -5,7 +5,7 @@ pydantic==2.10.4
 pydantic-settings==2.7.1
 python-dotenv==1.0.1
 neo4j==5.27.0
-xgboost==2.1.3
+xgboost==2.0.3  # 2.1.x pulls nvidia-nccl-cu12 (~200MB CUDA lib) — useless for CPU; OOMs Render's free build
 scikit-learn==1.5.2
 numpy==1.26.4
 pandas==2.2.3
