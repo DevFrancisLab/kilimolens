@@ -17,6 +17,7 @@ from app.crud import messaging as crud
 from app.schemas import SmsResult
 from app.services.africas_talking import AfricasTalkingClient, get_sms_client
 from app.utils.phone import normalize_msisdn
+from app.utils.sms_text import strip_keyword
 
 router = APIRouter(prefix="/sms", tags=["sms"])
 
@@ -74,11 +75,14 @@ async def inbound_sms(
     date: str = Form(""),
     id: str = Form(""),
     linkId: str = Form(""),
+    settings: Settings = Depends(get_settings),
     sms_client: AfricasTalkingClient = Depends(get_sms_client),
 ) -> dict:
     phone = normalize_msisdn(from_)
     crud.log_sms("inbound", phone, text, "received", provider_id=id or None)
-    reply = _reply_for(text, phone)
+    # On a shortcode the message is prefixed with the registered keyword (e.g.
+    # "Test11 SCORE") — strip it so the keyword router sees the real command.
+    reply = _reply_for(strip_keyword(text, settings.at_sms_keyword), phone)
     background.add_task(sms_client.send_sms, phone, reply)
     return {"status": "ok"}
 

@@ -39,6 +39,9 @@ class Settings(BaseSettings):
     at_sandbox_api_key: str = ""
     at_sandbox_sender_id: str = ""  # sandbox shortcode / alphanumeric sender id
     at_ussd_default_language: str = "en"  # "en" | "sw"
+    # Two-way SMS keyword registered on the shortcode (e.g. "Test11"). Africa's
+    # Talking prefixes inbound messages with it; we strip it before processing.
+    at_sms_keyword: str = ""
 
     # Optional shared secret guarding the internal "notify" SMS endpoint.
     # Leave blank to keep that endpoint disabled (returns 503).
